@@ -5,7 +5,7 @@ import {
   PlaylistFilters, 
   CreatePlaylistData, 
   UpdatePlaylistData
-} from '@/types'
+} from '@/types/database'
 
 export type SupabaseClientType = SupabaseClient<Database>
 

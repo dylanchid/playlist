@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PlaylistCard } from '@/components/playlists/playlist-card'
+import { PlaylistGrid } from '@/components/playlists/playlist-grid'
 import { mockUsers, mockPlaylists } from '@/lib/mockData'
 import type { User as UserData, Playlist } from '@/types/playlist'
 
@@ -325,23 +326,9 @@ export default function FriendsPage() {
 
           {/* Friends' Playlists */}
           <TabsContent value="playlists">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {friendsPlaylists.map(playlist => {
-                const user = mockUsers.find(u => u.id === playlist.user_id)
-                if (!user) return null
-                
-                return (
-                  <PlaylistCard
-                    key={playlist.id}
-                    playlist={playlist}
-                    user={user}
-                    onLike={handleLike}
-                    onShare={handleShare}
-                    isLiked={likedPlaylists.has(playlist.id)}
-                  />
-                )
-              })}
-            </div>
+            <PlaylistGrid 
+              emptyMessage="No playlists from friends yet. Follow some friends to see their playlists!"
+            />
           </TabsContent>
 
           {/* Friend Suggestions */}

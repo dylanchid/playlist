@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { PlaylistCard } from '@/components/playlists/playlist-card'
+import { PlaylistGrid } from '@/components/playlists/playlist-grid'
 import { mockUsers, mockPlaylists } from '@/lib/mockData'
 import type { Playlist } from '@/types/playlist'
 
@@ -422,23 +423,9 @@ export default function RankingsPage() {
               {/* Featured Trending Playlists */}
               <div>
                 <h3 className="text-xl font-bold mb-4">🔥 Trending Playlists</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {rankedPlaylists.slice(0, 6).map(playlist => {
-                    const user = mockUsers.find(u => u.id === playlist.user_id)
-                    if (!user) return null
-                    
-                    return (
-                      <PlaylistCard
-                        key={playlist.id}
-                        playlist={playlist}
-                        user={user}
-                        onLike={handleLike}
-                        onShare={handleShare}
-                        isLiked={likedPlaylists.has(playlist.id)}
-                      />
-                    )
-                  })}
-                </div>
+                <PlaylistGrid 
+                  emptyMessage="No trending playlists found. Check back later!"
+                />
               </div>
             </div>
           </TabsContent>

@@ -7,7 +7,17 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { PlaylistCardProps, formatDuration } from '@/types/playlist'
+import { formatDuration } from '@/types/playlist'
+import { PlaylistWithUser } from '@/types/database'
+import { User } from '@/types/playlist'
+
+interface PlaylistCardProps {
+  playlist: PlaylistWithUser
+  user: User
+  onLike: (playlistId: string) => void
+  onShare: (playlist: PlaylistWithUser) => void
+  isLiked: boolean
+}
 
 export const PlaylistCard: React.FC<PlaylistCardProps> = ({ 
   playlist, 

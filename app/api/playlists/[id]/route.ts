@@ -31,7 +31,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
@@ -45,8 +45,10 @@ export async function PUT(
       )
     }
 
+    const { id } = await params
+    
     // Check if playlist exists and user owns it
-    const existingPlaylist = await fetchPlaylistById(supabase, params.id)
+    const existingPlaylist = await fetchPlaylistById(supabase, id)
     if (!existingPlaylist) {
       return NextResponse.json(
         { error: 'Playlist not found' },
@@ -70,7 +72,7 @@ export async function PUT(
       tags: body.tags,
     }
 
-    const updatedPlaylist = await updatePlaylist(supabase, params.id, updateData)
+    const updatedPlaylist = await updatePlaylist(supabase, id, updateData)
     
     return NextResponse.json({
       data: updatedPlaylist,
@@ -87,7 +89,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
@@ -101,8 +103,10 @@ export async function DELETE(
       )
     }
 
+    const { id } = await params
+    
     // Check if playlist exists and user owns it
-    const existingPlaylist = await fetchPlaylistById(supabase, params.id)
+    const existingPlaylist = await fetchPlaylistById(supabase, id)
     if (!existingPlaylist) {
       return NextResponse.json(
         { error: 'Playlist not found' },
@@ -117,7 +121,7 @@ export async function DELETE(
       )
     }
 
-    await deletePlaylist(supabase, params.id)
+    await deletePlaylist(supabase, id)
     
     return NextResponse.json({
       message: 'Playlist deleted successfully'

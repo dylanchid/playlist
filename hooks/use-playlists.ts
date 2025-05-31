@@ -8,7 +8,7 @@ import {
   CreatePlaylistData, 
   UpdatePlaylistData,
   PaginatedResponse 
-} from '@/types'
+} from '@/types/database'
 
 // Query keys for consistent cache management
 export const playlistKeys = {
@@ -375,6 +375,7 @@ export function usePlaylistMutations() {
 
   return {
     likePlaylist,
+    toggleLike: likePlaylist, // Alias for compatibility
     createPlaylist,
     updatePlaylist,
     deletePlaylist,
