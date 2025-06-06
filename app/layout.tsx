@@ -2,16 +2,18 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Providers } from "@/lib/providers";
+import { Navbar } from "@/components/navigation/navbar";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
-  : "http://localhost:3000";
+  : "http://localhost:3001";
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Next.js and Supabase Starter Kit",
-  description: "The fastest way to build apps with Next.js and Supabase",
+  title: "PlaylistShare - Share Your Music",
+  description: "Discover, share, and connect with music lovers through playlists",
 };
 
 const geistSans = Geist({
@@ -35,7 +37,13 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            {children}
+            <div className="min-h-screen bg-background">
+              <Navbar />
+              <main>
+                {children}
+              </main>
+            </div>
+            <Toaster />
           </ThemeProvider>
         </Providers>
       </body>

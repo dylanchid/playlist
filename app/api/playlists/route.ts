@@ -3,6 +3,23 @@ import { createClient } from '@/lib/supabase/server'
 import { fetchPlaylists, createPlaylist } from '@/lib/supabase/playlists'
 import type { PlaylistFilters, CreatePlaylistData } from '@/types/database'
 
+// Helper function to add CORS headers
+function corsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  }
+}
+
+// Handle preflight requests
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: corsHeaders(),
+  })
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -22,12 +39,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       data: playlists,
       count: playlists.length
+    }, {
+      headers: corsHeaders(),
     })
   } catch (error) {
     console.error('Error fetching playlists:', error)
     return NextResponse.json(
       { error: 'Failed to fetch playlists' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: corsHeaders(),
+      }
     )
   }
 }
@@ -41,7 +63,10 @@ export async function POST(request: NextRequest) {
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
-        { status: 401 }
+        { 
+          status: 401,
+          headers: corsHeaders(),
+        }
       )
     }
 
@@ -62,12 +87,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       data: playlist,
       message: 'Playlist created successfully'
-    }, { status: 201 })
+    }, { 
+      status: 201,
+      headers: corsHeaders(),
+    })
   } catch (error) {
     console.error('Error creating playlist:', error)
     return NextResponse.json(
       { error: 'Failed to create playlist' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: corsHeaders(),
+      }
     )
   }
 } 

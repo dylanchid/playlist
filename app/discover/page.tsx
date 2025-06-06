@@ -3,12 +3,10 @@
 import React, { useState } from 'react';
 import { Music, Search, Plus } from 'lucide-react';
 import { PlaylistGrid } from '@/components/playlists/playlist-grid';
-import { UserProfile } from '@/components/users/user-profile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { usePlaylists } from '@/hooks/use-playlists';
 import { PlaylistFilters } from '@/types';
 import type { User as UserData } from '@/types/playlist';
@@ -154,7 +152,7 @@ export default function DiscoverPage() {
               <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
                 <span>Filtering by:</span>
                 {searchQuery && (
-                  <Badge variant="outline">Search: "{searchQuery}"</Badge>
+                  <Badge variant="outline">Search: &quot;{searchQuery}&quot;</Badge>
                 )}
                 {selectedTag && (
                   <Badge variant="outline">Tag: #{selectedTag}</Badge>

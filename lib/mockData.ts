@@ -47,6 +47,7 @@ export const mockPlaylists: Playlist[] = [
     user_id: '1',
     name: 'Late Night Vibes',
     description: 'Perfect songs for those 2am moments',
+    context_story: "Created during my final semester working on my thesis project. These tracks kept me focused during those 2am coding sessions when the world was quiet and it was just me and my code. Each song was carefully chosen to match the flow of deep work - starts with ambient sounds to clear the mind, then builds subtle energy to keep me motivated through the tough debugging sessions.",
     platform: 'spotify',
     track_count: 47,
     duration_ms: 11520000, // 3h 12m in milliseconds
@@ -64,6 +65,7 @@ export const mockPlaylists: Playlist[] = [
     user_id: '1',
     name: 'Workout Bangers',
     description: 'High energy tracks to fuel your gym sessions',
+    context_story: "Started this playlist when I began training for my first marathon. Every song was tested during actual workouts - if it didn't make me want to push harder or run faster, it didn't make the cut. The progression is intentional: explosive openers for warming up, steady bangers for the main sets, and epic finishers for when you need that last burst of energy.",
     platform: 'apple',
     track_count: 32,
     duration_ms: 7680000, // 2h 8m in milliseconds
@@ -81,6 +83,7 @@ export const mockPlaylists: Playlist[] = [
     user_id: '2',
     name: 'Jazz Classics Reimagined',
     description: 'Modern takes on timeless jazz standards',
+    context_story: "My grandfather was a jazz musician in the 60s, and I grew up listening to his vinyl collection. This playlist bridges our generations - taking the standards he loved and finding contemporary artists who honor the tradition while bringing fresh perspectives. Perfect for Sunday morning coffee or when you want to feel connected to music history.",
     platform: 'spotify',
     track_count: 28,
     duration_ms: 9900000, // 2h 45m in milliseconds
@@ -98,6 +101,7 @@ export const mockPlaylists: Playlist[] = [
     user_id: '3',
     name: 'Underground Beats',
     description: 'Fresh beats from the underground scene',
+    context_story: "Discovered these artists through late-night SoundCloud rabbit holes and local underground shows. Each track represents a different city's underground scene - from Detroit techno basements to Brooklyn warehouse parties. This is for when you want to hear the future of hip-hop before it hits the mainstream.",
     platform: 'spotify',
     track_count: 52,
     duration_ms: 13500000, // 3h 45m in milliseconds
@@ -115,6 +119,7 @@ export const mockPlaylists: Playlist[] = [
     user_id: '3',
     name: 'Ambient Soundscapes',
     description: 'Ethereal sounds for deep focus and meditation',
+    context_story: "Created during a particularly stressful period when I needed to find calm in chaos. Each track was chosen for its ability to create mental space - some for active meditation, others for background focus during creative work. The progression moves from more structured ambient pieces to pure soundscapes that dissolve into the background of consciousness.",
     platform: 'apple',
     track_count: 24,
     duration_ms: 8280000, // 2h 18m in milliseconds

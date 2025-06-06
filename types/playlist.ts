@@ -52,6 +52,7 @@ export interface Playlist {
   user_id: string;
   name: string;
   description?: string;
+  context_story: string; // Required for sharing - core PRD feature
   platform: 'spotify' | 'apple' | 'custom';
   external_id?: string;
   external_url?: string;
@@ -116,6 +117,7 @@ export interface UserWithStats extends User {
 export interface CreatePlaylistData {
   name: string;
   description?: string;
+  context_story: string; // Required for sharing
   platform: 'spotify' | 'apple' | 'custom';
   external_id?: string;
   external_url?: string;

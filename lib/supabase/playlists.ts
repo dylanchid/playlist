@@ -136,12 +136,17 @@ export async function fetchPlaylistById(
   }
 }
 
-// Create new playlist
+// Create new playlist with required context story
 export async function createPlaylist(
   supabase: SupabaseClientType,
   userId: string,
   playlistData: CreatePlaylistData
 ): Promise<PlaylistWithUser> {
+  // Ensure context_story is provided and not empty
+  if (!playlistData.context_story || playlistData.context_story.trim().length < 10) {
+    throw new Error('Context story is required and must be at least 10 characters long')
+  }
+
   const { data, error } = await supabase
     .from('playlists')
     .insert({
@@ -311,4 +316,83 @@ export async function recordPlaylistPlay(
     })
 
   if (error) throw error
+}
+
+// Share playlist with context (PRD core feature)
+export async function sharePlaylistWithContext(
+  supabase: SupabaseClientType,
+  playlistId: string,
+  sharedBy: string,
+  sharedWith: string,
+  shareContext: string,
+  shareType: 'friend' | 'public' | 'group' = 'friend'
+): Promise<void> {
+  // Validate context requirement
+  if (!shareContext || shareContext.trim().length < 10) {
+    throw new Error('Share context is required and must be at least 10 characters long')
+  }
+
+  const { error } = await supabase
+    .from('playlist_shares')
+    .insert({
+      playlist_id: playlistId,
+      shared_by: sharedBy,
+      shared_with: sharedWith,
+      share_context: shareContext.trim(),
+      share_type: shareType,
+    })
+
+  if (error) throw error
+
+  // Record activity for feed
+  await supabase
+    .from('friend_activities')
+    .insert({
+      user_id: sharedBy,
+      activity_type: 'shared_playlist',
+      playlist_id: playlistId,
+      target_user_id: sharedWith,
+      activity_metadata: {
+        share_context: shareContext.trim(),
+        share_type: shareType,
+      },
+    })
+}
+
+// Get shared playlists for a user
+export async function getSharedPlaylists(
+  supabase: SupabaseClientType,
+  userId: string
+): Promise<PlaylistWithUser[]> {
+  const { data, error } = await supabase
+    .from('playlist_shares')
+    .select(`
+      share_context,
+      share_type,
+      created_at,
+      playlists (
+        *,
+        user_profiles (
+          id,
+          username,
+          avatar_url
+        )
+      )
+    `)
+    .eq('shared_with', userId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+
+  // Transform the data to include share context
+  return data?.filter(share => share.playlists).map(share => {
+    const playlist = share.playlists as unknown as PlaylistWithUser;
+    return {
+      ...playlist,
+      share_context: share.share_context,
+      shared_at: share.created_at,
+      likes_count: 0, // Will be populated separately if needed
+      plays_count: 0,
+    };
+  }) || []
 } 
