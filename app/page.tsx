@@ -1,40 +1,9 @@
-import { AuthButton } from "@/components/auth-button";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 import { PlaylistGrid } from "@/components/playlists/playlist-grid";
-import { hasEnvVars } from "@/lib/utils";
 import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="min-h-screen flex flex-col">
-      <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
-        <div className="w-full max-w-7xl flex justify-between items-center p-3 px-5 text-sm">
-          <div className="flex gap-5 items-center font-semibold">
-            <Link href={"/"} className="text-xl font-bold">
-              🎵 PlaylistShare
-            </Link>
-            <div className="hidden md:flex items-center gap-4 ml-8">
-              <Link href="/discover" className="hover:text-foreground/80 transition-colors">
-                Discover
-              </Link>
-              <Link href="/friends" className="hover:text-foreground/80 transition-colors">
-                Friends
-              </Link>
-              <Link href="/rankings" className="hover:text-foreground/80 transition-colors">
-                Rankings
-              </Link>
-              <Link href="/create" className="hover:text-foreground/80 transition-colors">
-                Create
-              </Link>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <ThemeSwitcher />
-            {hasEnvVars && <AuthButton />}
-          </div>
-        </div>
-      </nav>
-
+    <>
       <div className="flex-1 w-full">
         {/* Hero Section */}
         <section className="w-full py-16 bg-gradient-to-b from-background to-muted/20">
@@ -52,6 +21,12 @@ export default function Home() {
                 className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-lg font-medium transition-colors"
               >
                 Get Started
+              </Link>
+              <Link 
+                href="/demo"
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              >
+                ✨ Try Context Demo
               </Link>
               <Link 
                 href="/discover"
@@ -150,6 +125,6 @@ export default function Home() {
           </div>
         </div>
       </footer>
-    </main>
+    </>
   );
 }

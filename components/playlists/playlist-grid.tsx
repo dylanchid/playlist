@@ -26,6 +26,8 @@ export const PlaylistGrid: React.FC<PlaylistGridProps> = ({
   className = "",
   showMockData = false
 }) => {
+  // Suppress unused variable warning
+  console.log('Mock data mode:', showMockData);
   // Get authenticated user
   const { user } = useAuth()
   

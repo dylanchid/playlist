@@ -31,6 +31,16 @@ export interface Database {
         Insert: Omit<PlaylistPlay, 'id' | 'played_at'>;
         Update: never;
       };
+      playlist_shares: {
+        Row: PlaylistShare;
+        Insert: Omit<PlaylistShare, 'id' | 'created_at'>;
+        Update: Partial<Omit<PlaylistShare, 'id' | 'playlist_id' | 'shared_by'>>;
+      };
+      friend_activities: {
+        Row: FriendActivity;
+        Insert: Omit<FriendActivity, 'id' | 'created_at'>;
+        Update: never;
+      };
     };
     Views: {
       [_ in never]: never;
@@ -47,13 +57,17 @@ export interface Database {
 export interface UserProfile {
   id: string;
   username: string;
+  display_name?: string;
   bio?: string;
   avatar_url?: string;
+  is_private: boolean;
   spotify_id?: string;
   apple_music_id?: string;
   spotify_access_token?: string;
   spotify_refresh_token?: string;
   spotify_token_expires_at?: string;
+  music_preferences: Record<string, unknown>; // JSON object for genre preferences, moods, etc.
+  profile_completed: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -63,6 +77,7 @@ export interface Playlist {
   user_id: string;
   name: string;
   description?: string;
+  context_story: string; // Required for sharing - core PRD feature
   platform: 'spotify' | 'apple' | 'custom';
   external_id?: string;
   external_url?: string;
@@ -99,6 +114,9 @@ export interface UserFollow {
   id: string;
   follower_id: string;
   following_id: string;
+  compatibility_score: number; // 0-100 based on music taste overlap
+  connection_source: string; // 'manual', 'suggestion', 'search'
+  status: 'pending' | 'connected' | 'blocked';
   created_at: string;
 }
 
@@ -109,6 +127,26 @@ export interface PlaylistPlay {
   ip_address?: string;
   user_agent?: string;
   played_at: string;
+}
+
+export interface PlaylistShare {
+  id: string;
+  playlist_id: string;
+  shared_by: string;
+  shared_with: string;
+  share_context?: string; // Additional context for this specific share
+  share_type: 'friend' | 'public' | 'group';
+  created_at: string;
+}
+
+export interface FriendActivity {
+  id: string;
+  user_id: string;
+  activity_type: 'shared_playlist' | 'commented' | 'liked_playlist' | 'followed_user';
+  playlist_id?: string;
+  target_user_id?: string;
+  activity_metadata: Record<string, unknown>;
+  created_at: string;
 }
 
 // Extended types with computed fields
@@ -160,6 +198,7 @@ export interface ApiResponse<T> {
 export interface CreatePlaylistData {
   name: string;
   description?: string;
+  context_story: string; // Required for sharing
   platform: 'spotify' | 'apple' | 'custom';
   external_id?: string;
   external_url?: string;
@@ -171,6 +210,7 @@ export interface CreatePlaylistData {
 export interface UpdatePlaylistData {
   name?: string;
   description?: string;
+  context_story?: string;
   cover_image_url?: string;
   is_public?: boolean;
   tags?: string[];
@@ -178,12 +218,17 @@ export interface UpdatePlaylistData {
 
 export interface CreateUserProfileData {
   username: string;
+  display_name?: string;
   bio?: string;
   avatar_url?: string;
+  is_private?: boolean;
 }
 
 export interface UpdateUserProfileData {
   username?: string;
+  display_name?: string;
   bio?: string;
   avatar_url?: string;
+  is_private?: boolean;
+  profile_completed?: boolean;
 } 

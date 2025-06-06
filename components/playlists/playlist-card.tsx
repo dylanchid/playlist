@@ -10,6 +10,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { formatDuration } from '@/types/playlist'
 import { PlaylistWithUser } from '@/types/database'
 import { User } from '@/types/playlist'
+import { CompactContextDisplay } from './playlist-context-display'
+import { ShareModal } from './share-modal'
 
 interface PlaylistCardProps {
   playlist: PlaylistWithUser
@@ -28,6 +30,7 @@ export const PlaylistCard: React.FC<PlaylistCardProps> = ({
 }) => {
   const [localLikes, setLocalLikes] = useState(playlist.likes_count || 0)
   const [liked, setLiked] = useState(isLiked)
+  const [showShareModal, setShowShareModal] = useState(false)
 
   const handleLike = () => {
     setLiked(!liked)
@@ -36,6 +39,12 @@ export const PlaylistCard: React.FC<PlaylistCardProps> = ({
   }
 
   const handleShare = () => {
+    setShowShareModal(true)
+  }
+
+  const handleShareWithContext = async () => {
+    // For now, just call the existing onShare function
+    // In the future, this would handle context-aware sharing
     onShare(playlist)
   }
 
@@ -130,6 +139,14 @@ export const PlaylistCard: React.FC<PlaylistCardProps> = ({
             {playlist.description}
           </p>
         )}
+
+        {/* Context Story - Core PRD Feature */}
+        {playlist.context_story && (
+          <CompactContextDisplay 
+            contextStory={playlist.context_story}
+            className="mb-3"
+          />
+        )}
         
         <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-3">
           <span className="flex items-center gap-1">
@@ -200,6 +217,14 @@ export const PlaylistCard: React.FC<PlaylistCardProps> = ({
           </div>
         </div>
       </CardContent>
+
+      {/* Share Modal with Context Requirement */}
+      <ShareModal
+        playlist={playlist}
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        onShare={handleShareWithContext}
+      />
     </Card>
   )
 } 
