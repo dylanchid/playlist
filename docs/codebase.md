@@ -100,7 +100,7 @@ playlist-nextjs/
    - Entry points: `app/api/playlists/`, `components/playlists/`
    - Key files: `types/playlist.ts`, `types/database.ts`
 
-3. **Social Friend Network**: Connect with friends, view compatibility scores, follow/unfollow
+3. **Social Friend Network**: Connect with friends, follow/unfollow, view activity
    - Entry points: `app/friends/`, `components/users/`
    - Key files: Database schema for `user_follows`, `friend_activities`
 
@@ -188,7 +188,7 @@ playlist-nextjs/
   - `playlists` - Playlist metadata with optional descriptions
   - `playlist_tracks` - Individual tracks within playlists
   - `playlist_likes` - User engagement with playlists
-  - `user_follows` - Friend connections with compatibility scores
+  - `user_follows` - Friend connections and following relationships
   - `playlist_plays` - Analytics tracking
   - `playlist_shares` - Sharing activity between users
   - `friend_activities` - Social activity feed data
@@ -300,28 +300,48 @@ playlist-nextjs/
 
 ## Development Backlog & Roadmap
 
-### **CRITICAL PRIORITY (Immediate - Days 1-10)**
+### **CRITICAL PRIORITY (Immediate - Days 1-7)**
 
-#### **🚨 Core Product Features**
-1. **Enhanced Social Features** - *CRITICAL*
-   - Friend compatibility scoring algorithm
-   - Reaction system (🔥 🎯 💭 🚀) replacing basic likes
+#### **🚨 Database Schema Updates (Days 1-2)**
+1. **Context-Required Sharing** - *CRITICAL*
+   - Add `context_story` column to playlists table (NOT NULL)
+   - Create `playlist_shares` table for contextual sharing
+   - Update UI to enforce context requirement (min 10 characters)
+   - **SQL Migration**:
+     ```sql
+     ALTER TABLE public.playlists ADD COLUMN IF NOT EXISTS context_story text NOT NULL DEFAULT '';
+     CREATE TABLE IF NOT EXISTS public.playlist_shares (
+       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+       playlist_id uuid REFERENCES playlists(id) ON DELETE CASCADE,
+       shared_by uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+       shared_with uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+       share_context text,
+       share_type varchar(20) DEFAULT 'friend',
+       created_at timestamp DEFAULT now()
+     );
+     ```
+   - Files: Database migration, `types/database.ts`, `components/playlists/share-modal.tsx`
+
+#### **🚨 Core Product Features (Days 3-5)**
+2. **Context-Required UI Implementation** - *CRITICAL*
+   - Enforce context input in playlist sharing flow
+   - Display context stories prominently on playlist cards
+   - Create context input component with validation
+   - Files: `components/playlists/context-input.tsx`, `components/playlists/share-modal.tsx`
+
+3. **Enhanced Social Features** - *CRITICAL*
    - Friend activity feed with playlist shares
-   - Files: `app/api/friends/`, `components/social/`
-
-2. **Music Discovery Enhancement** - *HIGH*
    - "Because [Friend] likes..." recommendation engine
+   - Enhanced playlist reactions system
+   - Files: `app/api/friends/`, `components/social/`, `lib/recommendations/`
+
+4. **Friend Discovery Enhancement** - *HIGH*
    - Smart friend suggestions based on music overlap
-   - Compatibility visualization in friend lists
-   - Files: `lib/recommendations/`, `components/discovery/`
+   - Friend playlist digest and activity tracking
+   - Improved friend connection flow
+   - Files: `components/discovery/`, `app/friends/page.tsx`
 
-3. **Playlist Sharing Improvements** - *HIGH*
-   - Streamlined sharing flow with optional descriptions
-   - Enhanced playlist discovery and browsing
-   - Cross-platform playlist integration improvements
-   - Files: `components/playlists/`, `app/api/playlists/`
-
-### **HIGH PRIORITY (Weeks 2-4)**
+### **HIGH PRIORITY (Days 6-14)**
 
 #### **🧪 Testing Infrastructure**
 4. **Comprehensive Testing Framework** - *HIGH*
@@ -432,7 +452,7 @@ playlist-nextjs/
 ### **SUCCESS METRICS BY PHASE**
 
 #### **Phase 1 (Critical - Days 1-10)**
-- ✅ Enhanced social features with friend compatibility scores
+- ✅ Enhanced social features with friend activity feeds
 - ✅ Reaction system replacing basic likes
 - ✅ Activity feed showing friend playlist sharing activity
 - ✅ Streamlined playlist sharing with optional descriptions
@@ -493,4 +513,4 @@ node setup-database.js  # Check database configuration
 
 ---
 
-*Last Updated: 2025-06-06*
+*Last Updated: 2025-01-10*
