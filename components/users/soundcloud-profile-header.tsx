@@ -12,12 +12,13 @@ interface SoundCloudProfileHeaderProps {
     id: string
     username: string
     bio?: string
-    avatar_url?: string
-    banner_url?: string
+    avatar_url?: string | null
+    banner_url?: string | null
     location?: string
     website?: string
     spotify_id?: string
     apple_music_id?: string
+    isVerified?: boolean
   }
   stats: {
     followers: number
@@ -39,19 +40,21 @@ export const SoundCloudProfileHeader: React.FC<SoundCloudProfileHeaderProps> = (
   onFollow,
   onMessage,
 }) => {
-  const defaultBanner = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1200&h=400&fit=crop&crop=center'
+
   
   return (
     <div className="relative w-full">
       {/* Banner Image */}
       <div className="relative h-64 md:h-80 w-full overflow-hidden bg-gradient-to-r from-orange-400 via-pink-500 to-purple-600">
-        <Image
-          src={user.banner_url || defaultBanner}
-          alt={`${user.username}'s banner`}
-          fill
-          className="object-cover"
-          priority
-        />
+        {user.banner_url && (
+          <Image
+            src={user.banner_url}
+            alt={`${user.username}'s banner`}
+            fill
+            className="object-cover"
+            priority
+          />
+        )}
         <div className="absolute inset-0 bg-black/20" />
       </div>
 

@@ -21,7 +21,7 @@ export async function OPTIONS() {
 // Check if user has liked a playlist
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
@@ -37,7 +37,7 @@ export async function GET(
       )
     }
 
-    const { id: playlistId } = params
+    const { id: playlistId } = await params
 
     const { data, error } = await supabase
       .from('playlist_likes')
@@ -68,7 +68,7 @@ export async function GET(
 // Toggle playlist like/unlike
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
@@ -84,7 +84,7 @@ export async function POST(
       )
     }
 
-    const { id: playlistId } = params
+    const { id: playlistId } = await params
 
     // Check if already liked
     const { data: existingLike } = await supabase

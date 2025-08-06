@@ -114,7 +114,7 @@ export const ContextDemo: React.FC = () => {
       <div className="text-center space-y-4">
         <h1 className="text-3xl font-bold">Context-Required Sharing Demo</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          Experience PlaylistShare's core feature: every playlist comes with a personal story. 
+          Experience PlaylistShare&apos;s core feature: every playlist comes with a personal story. 
           This is what makes music discovery meaningful and authentic.
         </p>
         <div className="flex items-center justify-center gap-2 flex-wrap">
@@ -198,14 +198,14 @@ export const ContextDemo: React.FC = () => {
           <ContextInput
             value={demoContext}
             onChange={setDemoContext}
-            placeholder="Describe a playlist you'd create. What's the story behind it? When would someone listen to it?"
+            placeholder="Describe a playlist you&apos;d create. What&apos;s the story behind it? When would someone listen to it?"
             label="Your Playlist Story"
           />
           <div className="mt-4 text-sm text-muted-foreground">
             <p className="font-medium mb-2">💡 Great context stories include:</p>
             <ul className="list-disc list-inside space-y-1">
               <li>The inspiration or moment that sparked the playlist</li>
-              <li>When and where it's perfect to listen</li>
+              <li>When and where it&apos;s perfect to listen</li>
               <li>The emotional journey or progression of the songs</li>
               <li>Personal memories or experiences connected to the music</li>
             </ul>

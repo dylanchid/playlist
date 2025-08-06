@@ -66,7 +66,6 @@ export interface UserProfile {
   spotify_access_token?: string;
   spotify_refresh_token?: string;
   spotify_token_expires_at?: string;
-  music_preferences: Record<string, unknown>; // JSON object for genre preferences, moods, etc.
   profile_completed: boolean;
   created_at: string;
   updated_at: string;

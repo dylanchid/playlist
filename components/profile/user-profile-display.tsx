@@ -18,6 +18,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
+import { usePlaylistShare } from "@/hooks/use-playlist-share";
+import { useState } from "react";
+import { ShareModal } from "@/components/playlists/share-modal";
+import { PostPlaylistModal } from "@/components/playlists/post-playlist-modal";
+import { PlaylistWithUser } from "@/types/playlist";
 
 interface UserProfileDisplayProps {
   username: string;
@@ -25,6 +30,10 @@ interface UserProfileDisplayProps {
 
 export function UserProfileDisplay({ username }: UserProfileDisplayProps) {
   const { user, profile: currentUserProfile } = useAuth();
+  const { sharePlaylist } = usePlaylistShare();
+  const [selectedPlaylist, setSelectedPlaylist] = useState<PlaylistWithUser | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [isPostPlaylistModalOpen, setIsPostPlaylistModalOpen] = useState(false);
   
   // Suppress unused variable warning
   console.log('Current user:', user);
@@ -34,6 +43,23 @@ export function UserProfileDisplay({ username }: UserProfileDisplayProps) {
 
   const isOwnProfile = currentUserProfile?.username === username;
   const isPrivate = profile?.is_private && !isOwnProfile;
+
+  const handleShare = (playlist: PlaylistWithUser) => {
+    setSelectedPlaylist(playlist);
+    setShowShareModal(true);
+  };
+
+  const handleShareWithContext = async (context: string, targetFriends?: string[], shareType?: 'friend' | 'public') => {
+    if (!selectedPlaylist) return;
+    
+    try {
+      await sharePlaylist(selectedPlaylist, context, targetFriends, shareType);
+      setShowShareModal(false);
+      setSelectedPlaylist(null);
+    } catch (error) {
+      console.error('Error sharing playlist:', error);
+    }
+  };
 
   if (profileLoading) {
     return (
@@ -178,10 +204,8 @@ export function UserProfileDisplay({ username }: UserProfileDisplayProps) {
               {isOwnProfile ? "Your Playlists" : `${profile.display_name || profile.username}'s Playlists`}
             </h2>
             {isOwnProfile && (
-              <Button asChild>
-                <Link href="/playlists/create">
-                  Create Playlist
-                </Link>
+              <Button onClick={() => setIsPostPlaylistModalOpen(true)}>
+                Create Playlist
               </Button>
             )}
           </div>
@@ -221,7 +245,7 @@ export function UserProfileDisplay({ username }: UserProfileDisplayProps) {
                     playlist={playlist}
                     user={playlistUser}
                     onLike={() => {}} // TODO: Implement like functionality
-                    onShare={() => {}} // TODO: Implement share functionality
+                    onShare={() => handleShare(playlist)}
                     isLiked={false} // TODO: Implement like checking
                   />
                 );
@@ -241,10 +265,8 @@ export function UserProfileDisplay({ username }: UserProfileDisplayProps) {
                   }
                 </p>
                 {isOwnProfile && (
-                  <Button asChild>
-                    <Link href="/playlists/create">
-                      Create Your First Playlist
-                    </Link>
+                  <Button onClick={() => setIsPostPlaylistModalOpen(true)}>
+                    Create Your First Playlist
                   </Button>
                 )}
               </CardContent>
@@ -252,6 +274,29 @@ export function UserProfileDisplay({ username }: UserProfileDisplayProps) {
           )}
         </div>
       </div>
+
+      {/* Share Modal */}
+      {selectedPlaylist && (
+        <ShareModal
+          playlist={selectedPlaylist}
+          isOpen={showShareModal}
+          onClose={() => {
+            setShowShareModal(false);
+            setSelectedPlaylist(null);
+          }}
+          onShare={handleShareWithContext}
+        />
+      )}
+
+      {/* Post Playlist Modal */}
+      <PostPlaylistModal
+        isOpen={isPostPlaylistModalOpen}
+        onClose={() => setIsPostPlaylistModalOpen(false)}
+        onSuccess={(playlistId) => {
+          setIsPostPlaylistModalOpen(false);
+          // Navigation is handled by the modal itself
+        }}
+      />
     </div>
   );
 } 

@@ -16,15 +16,31 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       auth: {
-        // Auto refresh tokens
+        // Auto refresh tokens with retry logic
         autoRefreshToken: true,
         // Persist auth state in local storage
         persistSession: true,
         // Handle auth state detection
         detectSessionInUrl: true,
         // Reduce debug logging noise in development
-        debug: false
-      }
+        debug: false,
+        // Add retry configuration for network issues
+        retryInitialDelay: 1000,
+        retryMaxDelay: 5000,
+        retryAttempts: 3
+      },
+      global: {
+        // Add better error handling for network failures
+        fetch: (url, options = {}) => {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+          
+          return fetch(url, {
+            ...options,
+            signal: controller.signal,
+          }).finally(() => clearTimeout(timeoutId));
+        },
+      },
     }
   );
 

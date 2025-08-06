@@ -18,7 +18,7 @@ interface UnifiedAuthModalProps {
 }
 
 export function UnifiedAuthModal({ isOpen, onClose, redirectTo }: UnifiedAuthModalProps) {
-  const [currentMode, setCurrentMode] = useState<'login' | 'signup'>('login');
+  const [currentMode, setCurrentMode] = useState<'login' | 'signup' | 'forgot-password'>('login');
   const { user } = useAuth();
 
   // Close modal if user is authenticated

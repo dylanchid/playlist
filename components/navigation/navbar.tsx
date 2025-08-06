@@ -12,11 +12,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Music, Settings, User, LogOut, Menu, X } from "lucide-react";
+import { Music, Settings, User, LogOut, Menu, X, ChevronDown, Plus } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { UserAvatar } from "@/components/users/user-avatar";
 import { UnifiedAuthModal } from "@/components/auth/unified-auth-modal";
+import { PostPlaylistModal } from "@/components/playlists/post-playlist-modal";
 import { cn } from "@/lib/utils";
+import { useSpotifyConnectionStatus } from "@/lib/spotify/queries";
 
 const navigation = [
   { name: "Home", href: "/" },
@@ -30,8 +32,24 @@ const navigation = [
 export function Navbar() {
   const { user, profile, loading, signOut } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isPostPlaylistModalOpen, setIsPostPlaylistModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const { data: spotifyConnection } = useSpotifyConnectionStatus();
+
+  // Check for URL parameter to open modal
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get('openPlaylistModal') === 'true') {
+        setIsPostPlaylistModalOpen(true);
+        // Clean up the URL
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('openPlaylistModal');
+        window.history.replaceState({}, '', newUrl.pathname);
+      }
+    }
+  }, []);
 
   // Debug logging for auth state changes
   useEffect(() => {
@@ -113,23 +131,50 @@ export function Navbar() {
 
             {/* Auth Section */}
             <div className="flex items-center space-x-4">
+              {/* Debug indicator - remove this in production */}
+              <div className="hidden sm:block text-xs text-muted-foreground">
+                {loading ? 'Loading...' : user && profile ? 'User+Profile' : user ? 'User Only' : 'No User'}
+              </div>
+              
               {loading ? (
                 <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
               ) : user && profile ? (
                 <div className="flex items-center space-x-2">
-                  <span className="hidden sm:block text-sm font-medium text-foreground">
-                    {profile.display_name || profile.username}
-                  </span>
+                  <Button
+                    onClick={() => setIsPostPlaylistModalOpen(true)}
+                    variant="default"
+                    size="sm"
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                  >
+                    <Plus className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Post Playlist</span>
+                  </Button>
+                  {spotifyConnection && !spotifyConnection.connected && (
+                    <Link href="/onboarding/connect-spotify" passHref>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="bg-green-500 hover:bg-green-600 text-white"
+                      >
+                        <Music className="w-4 h-4 mr-2" />
+                        Connect Spotify
+                      </Button>
+                    </Link>
+                  )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                      <button className="flex items-center space-x-2 h-auto px-2 py-1.5 rounded-full hover:bg-accent transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer">
+                        <span className="hidden sm:block text-sm font-medium text-foreground">
+                          {profile.display_name || profile.username}
+                        </span>
                         <UserAvatar
                           avatarUrl={profile.avatar_url}
                           username={profile.username}
                           displayName={profile.display_name}
                           size="md"
                         />
-                      </Button>
+                        <ChevronDown className="hidden sm:block h-4 w-4 text-muted-foreground" />
+                      </button>
                     </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="end" forceMount>
                     <DropdownMenuLabel className="font-normal">
@@ -163,10 +208,16 @@ export function Navbar() {
                                       </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-              ) : (
-                <Button onClick={openAuthModal} variant="default">
+              ) : !user ? (
+                <Button 
+                  onClick={openAuthModal} 
+                  variant="default"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
                   Sign Up / Log In
                 </Button>
+              ) : (
+                <div className="text-xs text-orange-500">Auth Error</div>
               )}
 
               {/* Mobile menu button */}
@@ -217,14 +268,18 @@ export function Navbar() {
                   </div>
                 )}
                 
-                {!user && (
+                {!user && !loading && (
                   <Button 
                     onClick={openAuthModal}
-                    className="mt-4 w-full"
+                    className="mt-4 w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                     variant="default"
                   >
                     Sign Up / Log In
                   </Button>
+                )}
+                
+                {loading && (
+                  <div className="mt-4 w-full h-10 animate-pulse bg-muted rounded-md" />
                 )}
               </div>
             </div>
@@ -237,6 +292,16 @@ export function Navbar() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         redirectTo={pathname}
+      />
+
+      {/* Post Playlist Modal */}
+      <PostPlaylistModal
+        isOpen={isPostPlaylistModalOpen}
+        onClose={() => setIsPostPlaylistModalOpen(false)}
+        onSuccess={(playlistId) => {
+          setIsPostPlaylistModalOpen(false);
+          // Navigation is handled by the modal itself
+        }}
       />
     </>
   );

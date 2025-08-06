@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { ChevronLeft, ChevronRight, Play, Heart, Share2, Music2, Users, Clock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Play, Heart, Share2, Music2, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -11,10 +11,10 @@ interface PlaylistData {
   id: string
   name: string
   description: string
-  coverUrl: string
+  coverUrl: string | null
   user: {
     username: string
-    avatar_url: string
+    avatar_url: string | null
   }
   trackCount: number
   likes: number
@@ -104,7 +104,7 @@ export const PlaylistSection: React.FC<PlaylistSectionProps> = ({
     >
       <div className="relative overflow-hidden">
         <img 
-          src={playlist.coverUrl} 
+          src={playlist.coverUrl || '/placeholder-playlist.jpg'} 
           alt={playlist.name}
           className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
         />
@@ -132,7 +132,7 @@ export const PlaylistSection: React.FC<PlaylistSectionProps> = ({
         
         <div className="flex items-center gap-2 mb-3">
           <Avatar className="h-6 w-6">
-            <AvatarImage src={playlist.user.avatar_url} />
+            <AvatarImage src={playlist.user.avatar_url || undefined} />
             <AvatarFallback className="text-xs">{playlist.user.username[0].toUpperCase()}</AvatarFallback>
           </Avatar>
           <span className="text-xs text-muted-foreground">@{playlist.user.username}</span>
@@ -191,7 +191,7 @@ export const PlaylistSection: React.FC<PlaylistSectionProps> = ({
       onClick={() => onPlaylistClick?.(playlist)}
     >
       <img 
-        src={playlist.coverUrl} 
+        src={playlist.coverUrl || '/placeholder-playlist.jpg'} 
         alt={playlist.name}
         className="w-16 h-16 rounded-lg object-cover"
       />
@@ -201,7 +201,7 @@ export const PlaylistSection: React.FC<PlaylistSectionProps> = ({
         <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <Avatar className="h-4 w-4">
-              <AvatarImage src={playlist.user.avatar_url} />
+              <AvatarImage src={playlist.user.avatar_url || undefined} />
               <AvatarFallback className="text-xs">{playlist.user.username[0].toUpperCase()}</AvatarFallback>
             </Avatar>
             @{playlist.user.username}

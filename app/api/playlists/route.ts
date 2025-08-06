@@ -74,12 +74,13 @@ export async function POST(request: NextRequest) {
     const playlistData: CreatePlaylistData = {
       name: body.name,
       description: body.description,
-      platform: body.platform,
+      context_story: body.context_story,
+      platform: body.platform ?? 'custom',
       external_id: body.external_id,
       external_url: body.external_url,
       cover_image_url: body.cover_image_url,
       is_public: body.is_public ?? true,
-      tags: body.tags || [],
+      tags: body.tags ?? [],
     }
 
     const playlist = await createPlaylist(supabase, user.id, playlistData)

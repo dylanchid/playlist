@@ -1,16 +1,15 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { FeaturedCarousel } from "@/components/playlists/featured-carousel";
-import { 
-  mockTrendingPlaylists, 
-  mockChillPlaylists, 
-  mockWorkoutPlaylists, 
-  mockGenrePlaylists,
-  mockFriendRecommendations
-} from "@/lib/mock-homepage-data";
+import { PostPlaylistModal } from "@/components/playlists/post-playlist-modal";
+
 import { Play, Heart, MoreHorizontal, Clock, Music } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function MeloHome() {
+  const [isPostPlaylistModalOpen, setIsPostPlaylistModalOpen] = useState(false);
   return (
     <div className="min-h-screen bg-black text-white flex">
       {/* Left Sidebar */}
@@ -80,7 +79,11 @@ export default function MeloHome() {
               </div>
             </div>
             
-            <Button variant="ghost" className="mt-4 text-orange-400 hover:text-orange-300 p-0 h-auto">
+            <Button 
+              variant="ghost" 
+              className="mt-4 text-orange-400 hover:text-orange-300 p-0 h-auto"
+              onClick={() => setIsPostPlaylistModalOpen(true)}
+            >
               Create new playlist +
             </Button>
           </div>
@@ -105,7 +108,7 @@ export default function MeloHome() {
             <button className="pb-4 text-gray-400 hover:text-white transition-colors">Artists</button>
             <button className="pb-4 text-gray-400 hover:text-white transition-colors">Albums</button>
             <button className="pb-4 text-gray-400 hover:text-white transition-colors">Streams</button>
-            <button className="pb-4 text-gray-400 hover:text-white transition-colors">Friends' playlists</button>
+            <button className="pb-4 text-gray-400 hover:text-white transition-colors">Friends&apos; playlists</button>
           </div>
         </div>
 
@@ -224,6 +227,16 @@ export default function MeloHome() {
           </div>
         </div>
       </div>
+
+      {/* Post Playlist Modal */}
+      <PostPlaylistModal
+        isOpen={isPostPlaylistModalOpen}
+        onClose={() => setIsPostPlaylistModalOpen(false)}
+        onSuccess={(playlistId) => {
+          setIsPostPlaylistModalOpen(false);
+          // Navigation is handled by the modal itself
+        }}
+      />
     </div>
   );
 } 

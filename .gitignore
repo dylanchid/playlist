@@ -60,4 +60,8 @@ node_modules/
 # OS specific
 # Task files
 tasks.json
-tasks/ 
+tasks/
+
+# SSL certificates
+localhost+1.pem
+localhost+1-key.pem 

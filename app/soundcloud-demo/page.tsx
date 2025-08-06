@@ -16,15 +16,15 @@ export default function SoundCloudDemoPage() {
 
   // Mock user data
   const mockUser = {
-    id: '1',
-    username: 'kahunaSlayer',
-    bio: 'Wanderer of worlds, ponderer of things, doer of deeds. I\'m a man that enjoys exotic pleasures, ancient sounds, rare fruits. Life\'s about living',
-    avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face',
-    banner_url: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1200&h=400&fit=crop&crop=center',
-    location: 'SF',
-    website: 'https://kahunaslayer.com',
-    spotify_id: 'kahunaslayer_spotify',
-    apple_music_id: undefined,
+    id: 'user-123',
+    username: 'SoundwaveSurfer',
+    bio: 'Riding the digital audio waves 🌊 | Creator of lofi chillhop & future funk beats | Bay Area based',
+    avatar_url: undefined,
+    banner_url: null,
+    location: 'San Francisco, CA',
+    website: 'https://soundwavesurfer.bandcamp.com',
+    isVerified: true,
+    spotify_id: 'spotify:user:123456789',
   }
 
   const mockStats = {
@@ -42,9 +42,9 @@ export default function SoundCloudDemoPage() {
       artist: 'kahunaSlayer',
       user: {
         username: 'kahunaSlayer',
-        avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face',
+        avatar_url: undefined,
       },
-      cover_image_url: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop',
+      cover_image_url: undefined,
       duration_ms: 257000, // 4:17
       created_at: '2024-01-15T10:30:00Z',
       genre: 'ambient',
@@ -60,9 +60,9 @@ export default function SoundCloudDemoPage() {
       artist: 'kahunaSlayer',
       user: {
         username: 'kahunaSlayer',
-        avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face',
+        avatar_url: undefined,
       },
-      cover_image_url: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=200&h=200&fit=crop',
+      cover_image_url: undefined,
       duration_ms: 324000, // 5:24
       created_at: '2024-01-12T15:45:00Z',
       genre: 'electronic',
@@ -78,9 +78,9 @@ export default function SoundCloudDemoPage() {
       artist: 'kahunaSlayer',
       user: {
         username: 'kahunaSlayer',
-        avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face',
+        avatar_url: undefined,
       },
-      cover_image_url: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop',
+      cover_image_url: undefined,
       duration_ms: 412000, // 6:52
       created_at: '2024-01-08T09:20:00Z',
       genre: 'experimental',

@@ -10,6 +10,8 @@ export async function createUserProfile(
   metadata?: Record<string, unknown>
 ): Promise<UserProfile | null> {
   try {
+    console.log('🆕 [CREATE_PROFILE] Starting profile creation for:', { userId, email, metadata });
+    
     // Check if profile already exists
     const { data: existingProfile } = await supabase
       .from('user_profiles')
@@ -18,6 +20,7 @@ export async function createUserProfile(
       .single()
 
     if (existingProfile) {
+      console.log('✅ [CREATE_PROFILE] Profile already exists:', existingProfile.username);
       return existingProfile
     }
 
@@ -29,6 +32,8 @@ export async function createUserProfile(
     if (baseUsername.length > 12) {
       baseUsername = baseUsername.substring(0, 12)
     }
+    
+    console.log('🔧 [CREATE_PROFILE] Generated base username:', baseUsername);
     
     // Find an available username
     let username = baseUsername
@@ -51,7 +56,9 @@ export async function createUserProfile(
       
       if (!existing) {
         isAvailable = true
+        console.log('✅ [CREATE_PROFILE] Available username found:', username);
       } else {
+        console.log('⚠️ [CREATE_PROFILE] Username taken, trying next:', username);
         counter++
         if (counter.toString().length + baseUsername.length <= 14) {
           username = `${baseUsername}${counter}`
@@ -63,29 +70,44 @@ export async function createUserProfile(
       }
     }
 
+    if (!isAvailable) {
+      console.error('❌ [CREATE_PROFILE] Could not find available username after 100 attempts');
+      return null;
+    }
+
     // Create the profile
+    const profileData = {
+      id: userId,
+      username: username,
+      display_name: (metadata?.full_name as string) || (metadata?.name as string) || null,
+      avatar_url: (metadata?.avatar_url as string) || null,
+      profile_completed: !!(metadata?.full_name),
+    };
+    
+    console.log('💾 [CREATE_PROFILE] Inserting profile data:', profileData);
+    
     const { data: newProfile, error } = await supabase
       .from('user_profiles')
-      .insert({
-        id: userId,
-        username: username,
-        display_name: (metadata?.full_name as string) || (metadata?.name as string) || null,
-        avatar_url: (metadata?.avatar_url as string) || null,
-        profile_completed: !!(metadata?.full_name),
-      })
+      .insert(profileData)
       .select()
       .single()
 
     if (error) {
-      console.error('❌ Error creating profile:', error)
+      console.error('❌ [CREATE_PROFILE] Database error creating profile:', error)
       console.error('Error code:', error.code)
       console.error('Error message:', error.message)
+      console.error('Profile data attempted:', profileData)
       throw error
     }
 
+    console.log('✅ [CREATE_PROFILE] Profile created successfully:', { 
+      username: newProfile.username, 
+      id: newProfile.id 
+    });
+    
     return newProfile
   } catch (error) {
-    console.error('Error in createUserProfile:', error)
+    console.error('❌ [CREATE_PROFILE] Exception in createUserProfile:', error)
     return null
   }
 }
@@ -97,6 +119,8 @@ export async function getOrCreateUserProfile(
   metadata?: Record<string, unknown>
 ): Promise<UserProfile | null> {
   try {
+    console.log('🔍 [GET_OR_CREATE] Starting profile fetch/create for:', { userId, email });
+    
     // First try to get existing profile
     const { data: profile, error } = await supabase
       .from('user_profiles')
@@ -104,19 +128,32 @@ export async function getOrCreateUserProfile(
       .eq('id', userId)
       .single()
 
+    console.log('🔍 [GET_OR_CREATE] Profile query result:', { 
+      hasProfile: !!profile, 
+      errorCode: error?.code,
+      errorMessage: error?.message 
+    });
+
     if (profile && !error) {
+      console.log('✅ [GET_OR_CREATE] Existing profile found:', profile.username);
       return profile
     }
 
     // If no profile exists, create one
     if (error?.code === 'PGRST116') {
-      return await createUserProfile(supabase, userId, email, metadata)
+      console.log('🆕 [GET_OR_CREATE] No profile found, creating new one...');
+      const newProfile = await createUserProfile(supabase, userId, email, metadata)
+      console.log('🆕 [GET_OR_CREATE] Profile creation result:', { 
+        success: !!newProfile, 
+        username: newProfile?.username 
+      });
+      return newProfile
     }
 
-    console.error('Error fetching profile:', error)
+    console.error('❌ [GET_OR_CREATE] Unexpected error fetching profile:', error)
     return null
   } catch (error) {
-    console.error('Error in getOrCreateUserProfile:', error)
+    console.error('❌ [GET_OR_CREATE] Exception in getOrCreateUserProfile:', error)
     return null
   }
 } 

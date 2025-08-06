@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Heart, Play, Share2, Music, Clock, Eye, ExternalLink } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
@@ -28,17 +29,24 @@ export const PlaylistCard: React.FC<PlaylistCardProps> = ({
   onShare, 
   isLiked 
 }) => {
+  const router = useRouter()
   const [localLikes, setLocalLikes] = useState(playlist.likes_count || 0)
   const [liked, setLiked] = useState(isLiked)
   const [showShareModal, setShowShareModal] = useState(false)
 
-  const handleLike = () => {
+  const handleCardClick = () => {
+    router.push(`/playlists/${playlist.id}`)
+  }
+
+  const handleLike = (e: React.MouseEvent) => {
+    e.stopPropagation()
     setLiked(!liked)
     setLocalLikes(prev => liked ? prev - 1 : prev + 1)
     onLike(playlist.id)
   }
 
-  const handleShare = () => {
+  const handleShare = (e: React.MouseEvent) => {
+    e.stopPropagation()
     setShowShareModal(true)
   }
 
@@ -48,12 +56,13 @@ export const PlaylistCard: React.FC<PlaylistCardProps> = ({
     onShare(playlist)
   }
 
-  const handleExternalLink = () => {
+  const handleExternalLink = (e: React.MouseEvent) => {
+    e.stopPropagation()
     if (playlist.external_url) {
       window.open(playlist.external_url, '_blank', 'noopener,noreferrer')
     } else {
       // For now, we'll just copy the playlist link to clipboard
-      const playlistUrl = `${window.location.origin}/playlist/${playlist.id}`
+      const playlistUrl = `${window.location.origin}/playlists/${playlist.id}`
       navigator.clipboard.writeText(playlistUrl)
     }
   }
@@ -85,7 +94,10 @@ export const PlaylistCard: React.FC<PlaylistCardProps> = ({
   }
 
   return (
-    <Card className="overflow-hidden group hover:shadow-xl transition-all duration-300 bg-white dark:bg-gray-900">
+    <Card 
+      className="overflow-hidden group hover:shadow-xl transition-all duration-300 bg-white dark:bg-gray-900 cursor-pointer"
+      onClick={handleCardClick}
+    >
       <div className="relative">
         <div className="w-full h-48 bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 flex items-center justify-center relative">
           {playlist.cover_image_url ? (
@@ -95,10 +107,14 @@ export const PlaylistCard: React.FC<PlaylistCardProps> = ({
               fill
               className="object-cover"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              onError={(e) => {
+                // Hide the image and show the fallback icon if loading fails
+                e.currentTarget.style.display = 'none';
+              }}
             />
-          ) : (
-            <Music className="w-16 h-16 text-white opacity-80" />
-          )}
+          ) : null}
+          {/* Always show fallback icon, but it will be hidden by the image if it loads successfully */}
+          <Music className={`w-16 h-16 text-white opacity-80 ${playlist.cover_image_url ? 'absolute' : ''}`} />
         </div>
         
         <div className="absolute top-3 right-3">
@@ -110,6 +126,10 @@ export const PlaylistCard: React.FC<PlaylistCardProps> = ({
         <Button
           size="sm"
           className="absolute bottom-3 right-3 bg-white/90 hover:bg-white text-gray-800 shadow-lg transform translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300"
+          onClick={(e) => {
+            e.stopPropagation()
+            // TODO: Implement play functionality
+          }}
         >
           <Play className="w-4 h-4" />
         </Button>

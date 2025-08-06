@@ -4,6 +4,7 @@ import { ThemeProvider } from "next-themes";
 import { Providers } from "@/lib/providers";
 import { Navbar } from "@/components/navigation/navbar";
 import { Toaster } from "@/components/ui/sonner";
+import { DebugAuthState } from "@/components/debug-auth-state";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -42,6 +43,7 @@ export default function RootLayout({
               <main>
                 {children}
               </main>
+              <DebugAuthState />
             </div>
             <Toaster />
           </ThemeProvider>

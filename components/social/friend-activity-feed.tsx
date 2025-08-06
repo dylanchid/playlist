@@ -11,12 +11,12 @@ interface FriendActivity {
   id: string
   user: {
     username: string
-    avatar_url: string
+    avatar_url: string | null
   }
   type: 'like' | 'playlist_create' | 'follow' | 'comment'
   target?: {
     name: string
-    coverUrl?: string
+    coverUrl?: string | null
   }
   targetUser?: {
     username: string
@@ -31,12 +31,12 @@ const mockActivities: FriendActivity[] = [
     id: '1',
     user: {
       username: 'sarah_music',
-      avatar_url: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=100&h=100&fit=crop'
+      avatar_url: null
     },
     type: 'like',
     target: {
       name: 'Indie Rock Vibes',
-      coverUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=80&h=80&fit=crop'
+      coverUrl: null
     },
     timestamp: '2h ago'
   },
@@ -44,12 +44,12 @@ const mockActivities: FriendActivity[] = [
     id: '2',
     user: {
       username: 'mike_beats',
-      avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop'
+      avatar_url: null
     },
     type: 'playlist_create',
     target: {
       name: 'Morning Coffee Vibes',
-      coverUrl: 'https://images.unsplash.com/photo-1518972734183-c78f6c0b5b23?w=80&h=80&fit=crop'
+      coverUrl: null
     },
     timestamp: '4h ago'
   },
@@ -57,7 +57,7 @@ const mockActivities: FriendActivity[] = [
     id: '3',
     user: {
       username: 'emma_tunes',
-      avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop'
+      avatar_url: null
     },
     type: 'follow',
     targetUser: {
@@ -69,12 +69,12 @@ const mockActivities: FriendActivity[] = [
     id: '4',
     user: {
       username: 'alex_dj',
-      avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop'
+      avatar_url: null
     },
     type: 'comment',
     target: {
       name: 'Summer Road Trip',
-      coverUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=80&h=80&fit=crop'
+      coverUrl: null
     },
     message: 'Perfect driving playlist! 🚗✨',
     timestamp: '8h ago'
@@ -83,12 +83,12 @@ const mockActivities: FriendActivity[] = [
     id: '5',
     user: {
       username: 'chill_vibes',
-      avatar_url: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&h=100&fit=crop'
+      avatar_url: null
     },
     type: 'like',
     target: {
       name: 'Late Night Jazz',
-      coverUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=80&h=80&fit=crop'
+      coverUrl: null
     },
     timestamp: '1d ago'
   },
@@ -96,12 +96,12 @@ const mockActivities: FriendActivity[] = [
     id: '6',
     user: {
       username: 'beat_master',
-      avatar_url: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop'
+      avatar_url: null
     },
     type: 'playlist_create',
     target: {
       name: 'Electronic Dreams',
-      coverUrl: 'https://images.unsplash.com/photo-1571330735066-03aaa9429d89?w=80&h=80&fit=crop'
+      coverUrl: null
     },
     timestamp: '1d ago'
   }
@@ -128,13 +128,13 @@ export const FriendActivityFeed: React.FC = () => {
       case 'like':
         return (
           <span className="text-sm">
-            <span className="font-medium">liked</span> "{activity.target?.name}"
+            <span className="font-medium">liked</span> &quot;{activity.target?.name}&quot;
           </span>
         )
       case 'playlist_create':
         return (
           <span className="text-sm">
-            <span className="font-medium">created</span> "{activity.target?.name}"
+            <span className="font-medium">created</span> &quot;{activity.target?.name}&quot;
           </span>
         )
       case 'follow':
@@ -147,12 +147,12 @@ export const FriendActivityFeed: React.FC = () => {
         return (
           <div className="text-sm">
             <div>
-              <span className="font-medium">commented on</span> "{activity.target?.name}"
+              <span className="font-medium">commented on</span> &quot;{activity.target?.name}&quot;
             </div>
             {activity.message && (
-              <div className="text-muted-foreground italic mt-1">
-                "{activity.message}"
-              </div>
+                              <div className="text-muted-foreground italic mt-1">
+                  &quot;{activity.message}&quot;
+                </div>
             )}
           </div>
         )

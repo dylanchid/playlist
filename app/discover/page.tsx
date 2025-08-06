@@ -1,21 +1,21 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Music, Plus, Filter, TrendingUp, Clock, Users, Heart } from 'lucide-react';
+import { Music, Plus, Filter, Heart, Users } from 'lucide-react';
 import { PlaylistGrid } from '@/components/playlists/playlist-grid';
 import { PlaylistSection } from '@/components/playlists/playlist-section';
 import { PageHeader } from '@/components/common/page-header';
 import { SectionHeader } from '@/components/common/section-header';
+import { PostPlaylistModal } from '@/components/playlists/post-playlist-modal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { usePlaylists } from '@/hooks/use-playlists';
-import { PlaylistFilters } from '@/types';
-import type { User as UserData } from '@/types/playlist';
+import { PlaylistFilters, PlaylistWithUser, UserProfile } from '@/types/database';
 
 export default function DiscoverPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [selectedTag, setSelectedTag] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -51,7 +51,7 @@ export default function DiscoverPage() {
   };
 
   // Transform data for PlaylistSection component
-  const transformPlaylistData = (playlist: any) => ({
+  const transformPlaylistData = (playlist: PlaylistWithUser) => ({
     id: playlist.id,
     name: playlist.name,
     description: playlist.description || '',
@@ -89,7 +89,7 @@ export default function DiscoverPage() {
             className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-full"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Add Playlist
+            Post Playlist
           </Button>
         }
       />
@@ -339,36 +339,15 @@ export default function DiscoverPage() {
         </div>
       </div>
 
-      {/* Create Playlist Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-md">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-bold mb-4">Connect Your Music</h3>
-              <p className="text-muted-foreground mb-6">
-                Link your Spotify or Apple Music account to start sharing playlists.
-              </p>
-              <div className="space-y-3">
-                <Button className="w-full bg-green-500 hover:bg-green-600 text-white">
-                  <Music className="w-5 h-5 mr-2" />
-                  Connect Spotify
-                </Button>
-                <Button className="w-full bg-gray-900 hover:bg-gray-800 text-white">
-                  <Music className="w-5 h-5 mr-2" />
-                  Connect Apple Music
-                </Button>
-              </div>
-              <Button 
-                variant="ghost"
-                onClick={() => setShowCreateModal(false)}
-                className="w-full mt-4"
-              >
-                Cancel
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* Post Playlist Modal */}
+      <PostPlaylistModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={(playlistId) => {
+          setShowCreateModal(false);
+          // Navigation is handled by the modal itself
+        }}
+      />
     </div>
   );
 } 

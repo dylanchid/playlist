@@ -36,7 +36,13 @@ CREATE INDEX IF NOT EXISTS idx_playlist_shares_created_at ON public.playlist_sha
 -- 3. Enable Row Level Security (RLS) on playlist_shares
 ALTER TABLE public.playlist_shares ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies for playlist_shares
+-- RLS Policies for playlist_shares (safe creation)
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can create shares for their own playlists" ON public.playlist_shares;
+DROP POLICY IF EXISTS "Users can view their own shares" ON public.playlist_shares;
+DROP POLICY IF EXISTS "Users can update their own shares" ON public.playlist_shares;
+DROP POLICY IF EXISTS "Users can delete their own shares" ON public.playlist_shares;
+
 -- Users can insert shares where they are the sharer
 CREATE POLICY "Users can create shares for their own playlists" ON public.playlist_shares
   FOR INSERT WITH CHECK (

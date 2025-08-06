@@ -7,76 +7,85 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 
+
 // Mock data for featured playlists
-const mockFeaturedPlaylists = [
+const featuredPlaylists = [
   {
-    id: '1',
-    name: 'Indie Rock Vibes',
-    description: 'Perfect blend of indie and alternative rock',
-    coverUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop',
-    user: {
-      username: 'musiclover23',
-      avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop'
+    id: 1,
+    title: 'Indie Chill',
+    description: 'Relaxed indie tracks for a perfect day.',
+    curator: {
+      name: 'Chris L.',
+      username: 'chrisl',
+      avatar_url: null
     },
-    trackCount: 32,
-    likes: 1245,
-    genre: 'Indie Rock',
-    platform: 'Spotify'
+    trackCount: 50,
+    coverUrl: null,
+    tags: ['chill', 'indie', 'acoustic'],
+    platform: 'Spotify',
+    genre: 'Indie',
+    likes: 1234
   },
   {
-    id: '2',
-    name: 'Chill Lo-Fi Study',
-    description: 'Focus music for productive work sessions',
-    coverUrl: 'https://images.unsplash.com/photo-1518972734183-c78f6c0b5b23?w=400&h=400&fit=crop',
-    user: {
-      username: 'studybeats',
-      avatar_url: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=100&h=100&fit=crop'
+    id: 2,
+    title: 'Lo-fi Beats',
+    description: 'Beats to study, relax, or sleep to.',
+    curator: {
+      name: 'Sarah J.',
+      username: 'sarahj',
+      avatar_url: null
     },
-    trackCount: 48,
-    likes: 2103,
-    genre: 'Lo-Fi',
-    platform: 'Apple Music'
+    trackCount: 120,
+    coverUrl: null,
+    tags: ['lo-fi', 'hip-hop', 'study'],
+    platform: 'Spotify',
+    genre: 'Lo-fi',
+    likes: 5678
   },
   {
-    id: '3',
-    name: 'Summer Road Trip',
-    description: 'Feel-good hits for long drives',
-    coverUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=400&fit=crop',
-    user: {
-      username: 'roadtripper',
-      avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop'
+    id: 3,
+    title: 'Mountain Drive',
+    description: 'Upbeat tracks for your next adventure.',
+    curator: {
+      name: 'Mike D.',
+      username: 'miked',
+      avatar_url: null
     },
-    trackCount: 25,
-    likes: 892,
-    genre: 'Pop Rock',
-    platform: 'Custom'
+    trackCount: 30,
+    coverUrl: null,
+    tags: ['driving', 'upbeat', 'electronic'],
+    platform: 'Apple Music',
+    genre: 'Electronic',
+    likes: 2345
   },
   {
-    id: '4',
-    name: 'Late Night Jazz',
-    description: 'Smooth jazz for evening relaxation',
-    coverUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop',
-    user: {
-      username: 'jazzcat',
-      avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop'
+    id: 4,
+    title: 'Summer Vibes',
+    description: 'The ultimate summer playlist.',
+    curator: {
+      name: 'Alex R.',
+      username: 'alexr',
+      avatar_url: null
     },
-    trackCount: 19,
-    likes: 654,
-    genre: 'Jazz',
-    platform: 'Spotify'
+    trackCount: 75,
+    coverUrl: null,
+    tags: ['summer', 'pop', 'feel-good'],
+    platform: 'Custom',
+    genre: 'Pop',
+    likes: 3456
   }
-]
+];
 
 export const FeaturedCarousel: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [likedPlaylists, setLikedPlaylists] = useState<Set<string>>(new Set())
 
   const nextSlide = () => {
-    setCurrentIndex((prev) => (prev + 1) % mockFeaturedPlaylists.length)
+    setCurrentIndex((prev) => (prev + 1) % featuredPlaylists.length)
   }
 
   const prevSlide = () => {
-    setCurrentIndex((prev) => (prev - 1 + mockFeaturedPlaylists.length) % mockFeaturedPlaylists.length)
+    setCurrentIndex((prev) => (prev - 1 + featuredPlaylists.length) % featuredPlaylists.length)
   }
 
   const goToSlide = (index: number) => {
@@ -95,8 +104,8 @@ export const FeaturedCarousel: React.FC = () => {
     })
   }
 
-  const handleShare = (playlist: any) => {
-    navigator.clipboard.writeText(`Check out this playlist: ${playlist.name}`)
+  const handleShare = (playlist: { title: string }) => {
+    navigator.clipboard.writeText(`Check out this playlist: ${playlist.title}`)
     // Replace with toast notification in production
     alert('Playlist link copied to clipboard!')
   }
@@ -110,7 +119,7 @@ export const FeaturedCarousel: React.FC = () => {
     }
   }
 
-  const currentPlaylist = mockFeaturedPlaylists[currentIndex]
+  const currentPlaylist = featuredPlaylists[currentIndex]
 
   return (
     <div className="h-full">
@@ -142,7 +151,7 @@ export const FeaturedCarousel: React.FC = () => {
         {/* Background Image */}
         <div 
           className="absolute inset-0 bg-cover bg-center transition-all duration-500"
-          style={{ backgroundImage: `url(${currentPlaylist.coverUrl})` }}
+          style={currentPlaylist.coverUrl ? { backgroundImage: `url(${currentPlaylist.coverUrl})` } : {}}
         />
         
         <CardContent className="relative z-20 h-full flex flex-col justify-end p-6 text-white">
@@ -159,17 +168,17 @@ export const FeaturedCarousel: React.FC = () => {
           </Badge>
 
           {/* Playlist Info */}
-          <h3 className="text-2xl font-bold mb-2">{currentPlaylist.name}</h3>
+          <h3 className="text-2xl font-bold mb-2">{currentPlaylist.title}</h3>
           <p className="text-gray-200 mb-4 line-clamp-2">{currentPlaylist.description}</p>
           
           {/* User Info */}
           <div className="flex items-center gap-3 mb-4">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={currentPlaylist.user.avatar_url} />
-              <AvatarFallback>{currentPlaylist.user.username[0].toUpperCase()}</AvatarFallback>
+              <AvatarImage src={currentPlaylist.curator.avatar_url || undefined} />
+              <AvatarFallback>{currentPlaylist.curator.username[0].toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <p className="text-sm font-medium">@{currentPlaylist.user.username}</p>
+              <p className="text-sm font-medium">@{currentPlaylist.curator.username}</p>
               <p className="text-xs text-gray-300">{currentPlaylist.trackCount} tracks</p>
             </div>
           </div>
@@ -183,12 +192,12 @@ export const FeaturedCarousel: React.FC = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleLike(currentPlaylist.id)}
+              onClick={() => handleLike(currentPlaylist.id.toString())}
               className={`text-white hover:bg-white/20 ${
-                likedPlaylists.has(currentPlaylist.id) ? 'text-red-400' : ''
+                likedPlaylists.has(currentPlaylist.id.toString()) ? 'text-red-400' : ''
               }`}
             >
-              <Heart className={`h-4 w-4 mr-1 ${likedPlaylists.has(currentPlaylist.id) ? 'fill-current' : ''}`} />
+              <Heart className={`h-4 w-4 mr-1 ${likedPlaylists.has(currentPlaylist.id.toString()) ? 'fill-current' : ''}`} />
               {currentPlaylist.likes}
             </Button>
             <Button
@@ -212,7 +221,7 @@ export const FeaturedCarousel: React.FC = () => {
 
       {/* Carousel Indicators */}
       <div className="flex justify-center gap-2 mt-4">
-        {mockFeaturedPlaylists.map((_, index) => (
+        {featuredPlaylists.map((_, index) => (
           <button
             key={index}
             onClick={() => goToSlide(index)}
