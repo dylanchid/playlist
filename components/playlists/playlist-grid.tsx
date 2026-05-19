@@ -1,11 +1,10 @@
 'use client'
 
-import React, { useState } from 'react'
+import React from 'react'
 import { PlaylistCard } from './playlist-card'
 import { User } from '@/types/playlist'
 import { PlaylistWithUser, PlaylistFilters } from '@/types/database'
-import { usePlaylists, usePlaylistMutations } from '@/hooks/use-playlists'
-import { useAuth } from '@/contexts/auth-context'
+import { usePlaylists } from '@/hooks/use-playlists'
 
 interface PlaylistGridProps {
   filters?: PlaylistFilters
@@ -19,18 +18,11 @@ interface PlaylistGridProps {
 
 export const PlaylistGrid: React.FC<PlaylistGridProps> = ({
   filters = {},
-  onLike,
   onShare,
-  isLiked,
   emptyMessage = "No playlists found",
   className = "",
-  showMockData = false
+  showMockData: _showMockData = false,
 }) => {
-  // Suppress unused variable warning
-  console.log('Mock data mode:', showMockData);
-  // Get authenticated user
-  const { user } = useAuth()
-  
   // Fetch real data from Supabase
   const { 
     data: playlists = [], 
@@ -38,38 +30,6 @@ export const PlaylistGrid: React.FC<PlaylistGridProps> = ({
     error, 
     refetch 
   } = usePlaylists(filters)
-  
-  const { toggleLike } = usePlaylistMutations()
-  
-  // State for optimistic updates
-  const [optimisticLikes, setOptimisticLikes] = useState<Record<string, boolean>>({})
-
-  // Handle like functionality with real database updates
-  const handleLike = onLike || (async (playlistId: string) => {
-    if (!user) {
-      // Redirect to login or show login modal
-      alert('Please sign in to like playlists')
-      return
-    }
-
-    try {
-      // Optimistic update
-      setOptimisticLikes(prev => ({
-        ...prev,
-        [playlistId]: !prev[playlistId]
-      }))
-      
-      // Update in database
-      await toggleLike.mutateAsync({ playlistId, userId: user.id })
-    } catch (error) {
-      // Revert optimistic update on error
-      setOptimisticLikes(prev => ({
-        ...prev,
-        [playlistId]: !prev[playlistId]
-      }))
-      console.error('Failed to toggle like:', error)
-    }
-  })
 
   const handleShare = onShare || ((playlist: PlaylistWithUser) => {
     const url = `${window.location.origin}/playlists/${playlist.id}`
@@ -78,15 +38,6 @@ export const PlaylistGrid: React.FC<PlaylistGridProps> = ({
       // You might want to add a toast notification here
       alert('Playlist link copied to clipboard!')
     }
-  })
-
-  const checkIsLiked = isLiked || ((playlistId: string) => {
-    // Check optimistic state first, then fall back to server data
-    if (playlistId in optimisticLikes) {
-      return optimisticLikes[playlistId]
-    }
-    // This would need to be implemented with user context
-    return false
   })
 
   // Loading state
@@ -186,9 +137,7 @@ export const PlaylistGrid: React.FC<PlaylistGridProps> = ({
             key={playlist.id}
             playlist={playlist}
             user={user}
-            onLike={handleLike}
             onShare={handleShare}
-            isLiked={checkIsLiked(playlist.id)}
           />
         )
       })}

@@ -1,5 +1,6 @@
 import type { SpotifyTokenResponse, SpotifyTokenRefreshResponse } from '@/types/spotify';
 import { spotifyConfig } from '@/lib/config';
+import { isSpotifyOAuthDebugEnabled, logSpotifyOAuth } from '@/lib/spotify/oauth-debug';
 
 // PKCE utilities
 function generateRandomString(length: number): string {
@@ -73,7 +74,15 @@ export class SpotifyAuth {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = (await response.json()) as Record<string, unknown>;
+      if (isSpotifyOAuthDebugEnabled()) {
+        logSpotifyOAuth('token_exchange_http_error', {
+          httpStatus: response.status,
+          spotifyErrorBody: errorData,
+          redirectUriUsed: redirectUri,
+          clientIdPrefix: `${this.CLIENT_ID.slice(0, 8)}...`,
+        });
+      }
       throw new Error(`Spotify token exchange failed: ${errorData.error_description || errorData.error}`);
     }
 

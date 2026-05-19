@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { X, Music, Plus, Apple } from "lucide-react";
+import { X, Music, Plus } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { useSpotifyConnectionStatus } from "@/lib/spotify/queries";
 import { ConnectMusicPanel } from "./post-playlist-modal/connect-music-panel";
@@ -12,17 +12,11 @@ import { SpotifyPlaylistList } from "./post-playlist-modal/spotify-playlist-list
 import { PlaylistDetailsForm } from "./post-playlist-modal/playlist-details-form";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import type { SpotifyPlaylist } from "@/types/spotify";
 
 export interface PlaylistSelection {
   type: "spotify" | "custom";
-  spotifyPlaylist?: {
-    id: string;
-    name: string;
-    description: string;
-    images: Array<{ url: string; width?: number; height?: number }>;
-    tracks: { total: number };
-    external_urls: { spotify: string };
-  };
+  spotifyPlaylist?: SpotifyPlaylist;
 }
 
 interface PostPlaylistModalProps {
@@ -34,7 +28,7 @@ interface PostPlaylistModalProps {
 export function PostPlaylistModal({ isOpen, onClose, onSuccess }: PostPlaylistModalProps) {
   const { user } = useAuth();
   const router = useRouter();
-  const { data: spotifyConnection, isLoading: spotifyLoading } = useSpotifyConnectionStatus();
+  const { data: spotifyConnection } = useSpotifyConnectionStatus();
   
   const [selectedPlaylist, setSelectedPlaylist] = useState<PlaylistSelection | null>(null);
   const [isCreating, setIsCreating] = useState(false);

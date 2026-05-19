@@ -343,7 +343,7 @@ export default function DiscoverPage() {
       <PostPlaylistModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        onSuccess={(playlistId) => {
+        onSuccess={() => {
           setShowCreateModal(false);
           // Navigation is handled by the modal itself
         }}

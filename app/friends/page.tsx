@@ -1,133 +1,81 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Users, UserPlus, Heart, MessageCircle, Music2, TrendingUp, Search, Bell } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { Users, UserPlus, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PlaylistGrid } from '@/components/playlists/playlist-grid'
-import { mockUsers, mockPlaylists } from '@/lib/mockData'
-import type { User as UserData, Playlist } from '@/types/playlist'
+import { FriendActivityFeed } from '@/components/social/friend-activity-feed'
+import { getFriends, getSuggestions, getFriendPlaylists, followUserAction } from '@/app/actions/user'
+import { toast } from 'sonner'
+import Image from 'next/image'
 
-interface FriendActivity {
-  id: string
-  user: UserData
-  type: 'like' | 'playlist_create' | 'follow' | 'comment'
-  target?: Playlist
-  targetUser?: UserData
-  message?: string
-  timestamp: string
+interface ProfileData {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+  bio?: string | null;
+  playlists_count?: number;
+  followers_count?: number;
 }
 
-// Mock activity data
-const mockActivities: FriendActivity[] = [
-  {
-    id: '1',
-    user: mockUsers[0],
-    type: 'like',
-    target: mockPlaylists[0],
-    timestamp: '2h ago'
-  },
-  {
-    id: '2',
-    user: mockUsers[1],
-    type: 'playlist_create',
-    target: mockPlaylists[1],
-    timestamp: '4h ago'
-  },
-  {
-    id: '3',
-    user: mockUsers[2],
-    type: 'follow',
-    targetUser: mockUsers[3],
-    timestamp: '6h ago'
-  },
-  {
-    id: '4',
-    user: mockUsers[3],
-    type: 'comment',
-    target: mockPlaylists[2],
-    message: 'Amazing collection! Love the flow 🎵',
-    timestamp: '1d ago'
-  }
-]
+interface PlaylistData {
+  id: string;
+  name: string;
+  cover_image_url: string | null;
+  context_story?: string | null;
+  user_profiles?: {
+    username: string;
+  } | null;
+}
 
 export default function FriendsPage() {
   const [searchQuery, setSearchQuery] = useState('')
-  const [followedUsers, setFollowedUsers] = useState(new Set<string>(['1', '2']))
-  const [likedPlaylists, setLikedPlaylists] = useState(new Set<string>())
+  const [friends, setFriends] = useState<ProfileData[]>([])
+  const [suggestions, setSuggestions] = useState<ProfileData[]>([])
+  const [friendsPlaylists, setFriendsPlaylists] = useState<PlaylistData[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const handleFollow = (userId: string) => {
-    setFollowedUsers(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(userId)) {
-        newSet.delete(userId)
-      } else {
-        newSet.add(userId)
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [friendsData, suggestionsData, playlistsData] = await Promise.all([
+          getFriends(),
+          getSuggestions(),
+          getFriendPlaylists()
+        ])
+        setFriends(friendsData as unknown as ProfileData[])
+        setSuggestions(suggestionsData as unknown as ProfileData[])
+        setFriendsPlaylists(playlistsData as unknown as PlaylistData[])
+      } catch (error) {
+        console.error("Error loading friends data:", error)
+        toast.error("Failed to load some friends data.")
+      } finally {
+        setIsLoading(false)
       }
-      return newSet
-    })
-  }
-
-  const handleLike = (playlistId: string) => {
-    setLikedPlaylists(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(playlistId)) {
-        newSet.delete(playlistId)
-      } else {
-        newSet.add(playlistId)
-      }
-      return newSet
-    })
-  }
-
-  const handleShare = (playlist: Playlist) => {
-    navigator.clipboard.writeText(`Check out this playlist: ${playlist.name}`)
-    // Could be replaced with toast notification
-    alert('Playlist link copied to clipboard!')
-  }
-
-  // Use the variables to prevent ESLint errors
-  console.log('Liked playlists:', likedPlaylists.size)
-  console.log('Handle like function:', handleLike)
-  console.log('Handle share function:', handleShare)
-
-  const friends = mockUsers.filter(user => followedUsers.has(user.id))
-  const suggestions = mockUsers.filter(user => !followedUsers.has(user.id)).slice(0, 4)
-  const friendsPlaylists = mockPlaylists.filter(playlist => 
-    followedUsers.has(playlist.user_id)
-  ).slice(0, 6)
-
-  // For future search functionality
-  // const filteredUsers = mockUsers.filter(user =>
-  //   user.username.toLowerCase().includes(searchQuery.toLowerCase())
-  // )
-
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'like': return <Heart className="w-4 h-4 text-red-500" />
-      case 'playlist_create': return <Music2 className="w-4 h-4 text-green-500" />
-      case 'follow': return <UserPlus className="w-4 h-4 text-blue-500" />
-      case 'comment': return <MessageCircle className="w-4 h-4 text-purple-500" />
-      default: return <Bell className="w-4 h-4 text-gray-500" />
     }
-  }
+    loadData()
+  }, [])
 
-  const getActivityText = (activity: FriendActivity) => {
-    switch (activity.type) {
-      case 'like':
-        return `liked playlist "${activity.target?.name}"`
-      case 'playlist_create':
-        return `created new playlist "${activity.target?.name}"`
-      case 'follow':
-        return `started following ${activity.targetUser?.username}`
-      case 'comment':
-        return `commented on "${activity.target?.name}"`
-      default:
-        return 'had some activity'
+  const handleFollow = async (userId: string) => {
+    try {
+      const res = await followUserAction(userId)
+      if (res.success) {
+        toast.success("Followed successfully!")
+        // Optimistically update
+        const followedUser = suggestions.find(s => s.id === userId)
+        if (followedUser) {
+          setFriends(prev => [...prev, followedUser])
+          setSuggestions(prev => prev.filter(s => s.id !== userId))
+        }
+      } else {
+        toast.error(res.error || "Failed to follow")
+      }
+    } catch {
+      toast.error("An error occurred")
     }
   }
 
@@ -164,28 +112,22 @@ export default function FriendsPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <Card>
             <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-blue-600">{friends.length}</div>
+              <div className="text-2xl font-bold text-blue-600">{isLoading ? '-' : friends.length}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Friends</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">{mockActivities.filter(a => a.timestamp.includes('h')).length}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">New Activities</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-purple-600">{friendsPlaylists.length}</div>
+              <div className="text-2xl font-bold text-purple-600">{isLoading ? '-' : friendsPlaylists.length}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Friend Playlists</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-pink-600">{suggestions.length}</div>
+              <div className="text-2xl font-bold text-pink-600">{isLoading ? '-' : suggestions.length}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Suggestions</div>
             </CardContent>
           </Card>
@@ -203,39 +145,7 @@ export default function FriendsPage() {
           <TabsContent value="activity" className="space-y-6">
             <div className="grid md:grid-cols-3 gap-6">
               <div className="md:col-span-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5" />
-                      Recent Activity
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {mockActivities.map(activity => (
-                      <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                        <Avatar className="w-10 h-10">
-                          <AvatarImage src={activity.user?.avatar_url || ''} />
-                          <AvatarFallback>{activity.user?.username?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium">{activity.user?.username || 'Unknown'}</span>
-                            {getActivityIcon(activity.type)}
-                            <span className="text-sm text-gray-500">{activity.timestamp}</span>
-                          </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {getActivityText(activity)}
-                          </p>
-                                                     {activity.message && (
-                             <p className="text-sm text-gray-700 dark:text-gray-300 mt-1 italic">
-                               &ldquo;{activity.message}&rdquo;
-                             </p>
-                           )}
-                        </div>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
+                <FriendActivityFeed />
               </div>
 
               <div className="space-y-6">
@@ -244,19 +154,25 @@ export default function FriendsPage() {
                     <CardTitle>Friend Updates</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {friends.slice(0, 4).map(friend => (
-                      <div key={friend.id} className="flex items-center gap-3">
-                        <Avatar className="w-8 h-8">
-                          <AvatarImage src={friend?.avatar_url || ''} />
-                          <AvatarFallback>{friend?.username?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium">{friend?.username || 'Unknown'}</p>
-                          <p className="text-xs text-gray-500">Active 2h ago</p>
+                    {isLoading ? (
+                      <div className="text-sm text-muted-foreground">Loading...</div>
+                    ) : friends.length === 0 ? (
+                      <div className="text-sm text-muted-foreground">No friends yet.</div>
+                    ) : (
+                      friends.slice(0, 4).map(friend => (
+                        <div key={friend.id} className="flex items-center gap-3">
+                          <Avatar className="w-8 h-8">
+                            <AvatarImage src={friend?.avatar_url || ''} />
+                            <AvatarFallback>{friend?.username?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium">{friend?.username || 'Unknown'}</p>
+                            <p className="text-xs text-gray-500">Connected</p>
+                          </div>
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                         </div>
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </CardContent>
                 </Card>
 
@@ -265,24 +181,30 @@ export default function FriendsPage() {
                     <CardTitle>Quick Add</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {suggestions.slice(0, 3).map(suggestion => (
-                      <div key={suggestion.id} className="flex items-center gap-3">
-                        <Avatar className="w-8 h-8">
-                          <AvatarImage src={suggestion?.avatar_url || ''} />
-                          <AvatarFallback>{suggestion?.username?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium">{suggestion?.username || 'Unknown'}</p>
+                    {isLoading ? (
+                      <div className="text-sm text-muted-foreground">Loading...</div>
+                    ) : suggestions.length === 0 ? (
+                      <div className="text-sm text-muted-foreground">No suggestions right now.</div>
+                    ) : (
+                      suggestions.slice(0, 3).map(suggestion => (
+                        <div key={suggestion.id} className="flex items-center gap-3">
+                          <Avatar className="w-8 h-8">
+                            <AvatarImage src={suggestion?.avatar_url || ''} />
+                            <AvatarFallback>{suggestion?.username?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium">{suggestion?.username || 'Unknown'}</p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleFollow(suggestion.id)}
+                          >
+                            <UserPlus className="w-4 h-4" />
+                          </Button>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleFollow(suggestion.id)}
-                        >
-                          <UserPlus className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -302,37 +224,53 @@ export default function FriendsPage() {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-lg">{friend?.username || 'Unknown'}</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{friend?.bio || ''}</p>
-                        <div className="flex gap-4 mt-2 text-sm text-gray-500">
-                          <span>{friend?.playlists_count || 0} playlists</span>
-                          <span>{friend?.followers_count || 0} followers</span>
-                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{friend?.bio || 'Music lover'}</p>
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleFollow(friend.id)}
-                        className="flex-1"
-                      >
+                      <Button variant="outline" size="sm" className="flex-1" disabled>
                         Following
                       </Button>
                       <Button variant="outline" size="sm">
-                        Message
+                        Profile
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
               ))}
+              {friends.length === 0 && !isLoading && (
+                <div className="col-span-full text-center py-10 text-muted-foreground">
+                  You haven&apos;t followed anyone yet. Check the suggestions tab!
+                </div>
+              )}
             </div>
           </TabsContent>
 
           {/* Friends' Playlists */}
           <TabsContent value="playlists">
-            <PlaylistGrid 
-              emptyMessage="No playlists from friends yet. Follow some friends to see their playlists!"
-            />
+            {friendsPlaylists.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {/* Note: In a real implementation we'd map PlaylistCard here */}
+                {friendsPlaylists.map(playlist => (
+                  <Card key={playlist.id} className="overflow-hidden">
+                    {playlist.cover_image_url && (
+                      <div className="w-full h-48 bg-muted relative">
+                        <Image src={playlist.cover_image_url} alt={playlist.name} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" />
+                      </div>
+                    )}
+                    <CardContent className="p-4">
+                      <h3 className="font-bold truncate">{playlist.name}</h3>
+                      <p className="text-xs text-muted-foreground mb-2">By {playlist.user_profiles?.username}</p>
+                      {playlist.context_story && (
+                        <p className="text-sm text-muted-foreground line-clamp-2 italic">&quot;{playlist.context_story}&quot;</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <PlaylistGrid emptyMessage="No playlists from friends yet. Follow some friends to see their playlists!" />
+            )}
           </TabsContent>
 
           {/* Friend Suggestions */}
@@ -348,22 +286,15 @@ export default function FriendsPage() {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-lg">{suggestion?.username || 'Unknown'}</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{suggestion?.bio || ''}</p>
-                        <div className="flex gap-2 mt-2">
-                          <Badge variant="secondary" className="text-xs">Similar taste</Badge>
-                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{suggestion?.bio || 'Music lover'}</p>
                       </div>
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                      {suggestion?.playlists_count || 0} playlists • {suggestion?.followers_count || 0} followers
                     </div>
                     <Button
                       onClick={() => handleFollow(suggestion.id)}
                       className="w-full"
-                      variant={followedUsers.has(suggestion.id) ? "outline" : "default"}
                     >
                       <UserPlus className="w-4 h-4 mr-2" />
-                      {followedUsers.has(suggestion.id) ? 'Following' : 'Follow'}
+                      Follow
                     </Button>
                   </CardContent>
                 </Card>

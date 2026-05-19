@@ -5,7 +5,11 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const redirect = searchParams.get('redirect')
-  const next = redirect ? `${origin}${redirect}` : `${origin}/`
+  const safeRedirect =
+    redirect && redirect.startsWith('/') && !redirect.startsWith('//')
+      ? redirect
+      : null
+  const next = safeRedirect ? `${origin}${safeRedirect}` : `${origin}/`
 
   if (code) {
     const supabase = await createClient()
@@ -58,9 +62,16 @@ export async function GET(request: NextRequest) {
             .insert({
               id: authData.user.id,
               username: username,
-              display_name: authData.user.user_metadata?.full_name || authData.user.user_metadata?.name,
-              avatar_url: authData.user.user_metadata?.avatar_url,
-              profile_completed: !!authData.user.user_metadata?.full_name,
+              display_name: authData.user.user_metadata?.full_name ||
+                authData.user.user_metadata?.name ||
+                authData.user.user_metadata?.display_name,
+              avatar_url:
+                authData.user.user_metadata?.avatar_url ||
+                authData.user.user_metadata?.picture,
+              profile_completed: !!(
+                authData.user.user_metadata?.full_name ||
+                authData.user.user_metadata?.name
+              ),
             })
 
           if (profileError) {

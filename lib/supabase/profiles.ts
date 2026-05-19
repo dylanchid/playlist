@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { Database, UserProfile } from '@/types/database'
+import { USER_PROFILE_SAFE_COLUMNS } from '@/lib/supabase/user-profile-select'
 
 export type SupabaseClientType = SupabaseClient<Database>
 
@@ -15,7 +16,7 @@ export async function createUserProfile(
     // Check if profile already exists
     const { data: existingProfile } = await supabase
       .from('user_profiles')
-      .select('*')
+      .select(USER_PROFILE_SAFE_COLUMNS)
       .eq('id', userId)
       .single()
 
@@ -79,8 +80,11 @@ export async function createUserProfile(
     const profileData = {
       id: userId,
       username: username,
-      display_name: (metadata?.full_name as string) || (metadata?.name as string) || null,
-      avatar_url: (metadata?.avatar_url as string) || null,
+      display_name:
+        (metadata?.full_name as string) ||
+        (metadata?.name as string) ||
+        undefined,
+      avatar_url: (metadata?.avatar_url as string) || undefined,
       profile_completed: !!(metadata?.full_name),
     };
     
@@ -89,7 +93,7 @@ export async function createUserProfile(
     const { data: newProfile, error } = await supabase
       .from('user_profiles')
       .insert(profileData)
-      .select()
+      .select(USER_PROFILE_SAFE_COLUMNS)
       .single()
 
     if (error) {
@@ -124,7 +128,7 @@ export async function getOrCreateUserProfile(
     // First try to get existing profile
     const { data: profile, error } = await supabase
       .from('user_profiles')
-      .select('*')
+      .select(USER_PROFILE_SAFE_COLUMNS)
       .eq('id', userId)
       .single()
 

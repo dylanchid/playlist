@@ -51,39 +51,6 @@ export function Navbar() {
     }
   }, []);
 
-  // Debug logging for auth state changes
-  useEffect(() => {
-    console.log('🏠 [NAVBAR] Auth state changed:', {
-      timestamp: new Date().toISOString(),
-      user: !!user,
-      userId: user?.id,
-      userEmail: user?.email,
-      profile: !!profile,
-      profileId: profile?.id,
-      profileUsername: profile?.username,
-      loading,
-      shouldShowProfile: !!(user && profile),
-      shouldShowAuthButton: !user
-    });
-    
-    // Additional debugging for authentication state
-    if (user && !profile && !loading) {
-      console.warn('⚠️ [NAVBAR] User exists but no profile found!', {
-        userId: user.id,
-        userEmail: user.email,
-        userMetadata: user.user_metadata
-      });
-    }
-    
-    if (!user && !loading) {
-      console.log('🔐 [NAVBAR] No user detected, showing auth button');
-    }
-    
-    if (user && profile) {
-      console.log('✅ [NAVBAR] User and profile both exist, showing user menu');
-    }
-  }, [user, profile, loading]);
-
   const handleSignOut = async () => {
     console.log('🚪 Navbar signOut triggered');
     try {
@@ -131,11 +98,6 @@ export function Navbar() {
 
             {/* Auth Section */}
             <div className="flex items-center space-x-4">
-              {/* Debug indicator - remove this in production */}
-              <div className="hidden sm:block text-xs text-muted-foreground">
-                {loading ? 'Loading...' : user && profile ? 'User+Profile' : user ? 'User Only' : 'No User'}
-              </div>
-              
               {loading ? (
                 <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
               ) : user && profile ? (
@@ -298,7 +260,7 @@ export function Navbar() {
       <PostPlaylistModal
         isOpen={isPostPlaylistModalOpen}
         onClose={() => setIsPostPlaylistModalOpen(false)}
-        onSuccess={(playlistId) => {
+        onSuccess={() => {
           setIsPostPlaylistModalOpen(false);
           // Navigation is handled by the modal itself
         }}

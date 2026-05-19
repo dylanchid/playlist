@@ -23,7 +23,7 @@ export const FriendSelector: React.FC<FriendSelectorProps> = ({
   onFriendsChange,
   disabled = false
 }) => {
-  const [friends, setFriends] = useState<UserProfile[]>([])
+  const [friends, setFriends] = useState<Array<Pick<UserProfile, 'id' | 'username' | 'display_name' | 'avatar_url' | 'bio'>>>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -57,9 +57,17 @@ export const FriendSelector: React.FC<FriendSelectorProps> = ({
       }
 
       // Extract friend profiles
-      const friendProfiles = followsData
-        ?.map(follow => follow.user_profiles)
-        ?.filter(profile => profile !== null) as UserProfile[] || []
+      const friendProfiles = (followsData ?? [])
+        .flatMap((follow) => {
+          const profileValue = follow.user_profiles as unknown
+          if (!profileValue) return []
+          return Array.isArray(profileValue) ? profileValue : [profileValue]
+        })
+        .filter((profile): profile is Pick<UserProfile, 'id' | 'username' | 'display_name' | 'avatar_url' | 'bio'> => {
+          if (!profile || typeof profile !== 'object') return false
+          const candidate = profile as Record<string, unknown>
+          return typeof candidate.id === 'string' && typeof candidate.username === 'string'
+        })
 
       setFriends(friendProfiles)
     } catch (err) {

@@ -19,10 +19,11 @@ import {
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { usePlaylistShare } from "@/hooks/use-playlist-share";
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { toast } from "sonner";
 import { ShareModal } from "@/components/playlists/share-modal";
 import { PostPlaylistModal } from "@/components/playlists/post-playlist-modal";
-import { PlaylistWithUser } from "@/types/playlist";
+import { PlaylistWithUser } from "@/types/database";
 
 interface UserProfileDisplayProps {
   username: string;
@@ -34,9 +35,7 @@ export function UserProfileDisplay({ username }: UserProfileDisplayProps) {
   const [selectedPlaylist, setSelectedPlaylist] = useState<PlaylistWithUser | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [isPostPlaylistModalOpen, setIsPostPlaylistModalOpen] = useState(false);
-  
-  // Suppress unused variable warning
-  console.log('Current user:', user);
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const { data: profile, isLoading: profileLoading } = useProfile(username);
   const { data: stats, isLoading: statsLoading } = useUserStats(username);
   const { data: playlists, isLoading: playlistsLoading } = useUserPlaylists(username);
@@ -48,6 +47,26 @@ export function UserProfileDisplay({ username }: UserProfileDisplayProps) {
     setSelectedPlaylist(playlist);
     setShowShareModal(true);
   };
+
+  const handleLike = useCallback(async (playlistId: string) => {
+    if (!user) {
+      toast.error("Sign in to like playlists");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/playlists/${playlistId}/like`, { method: "POST" });
+      if (!res.ok) throw new Error("Failed to update like");
+      const data = (await res.json()) as { liked?: boolean };
+      setLikedIds((prev) => {
+        const next = new Set(prev);
+        if (data.liked) next.add(playlistId);
+        else next.delete(playlistId);
+        return next;
+      });
+    } catch {
+      toast.error("Could not update like");
+    }
+  }, [user]);
 
   const handleShareWithContext = async (context: string, targetFriends?: string[], shareType?: 'friend' | 'public') => {
     if (!selectedPlaylist) return;
@@ -244,9 +263,9 @@ export function UserProfileDisplay({ username }: UserProfileDisplayProps) {
                     key={playlist.id}
                     playlist={playlist}
                     user={playlistUser}
-                    onLike={() => {}} // TODO: Implement like functionality
+                    onLike={() => handleLike(playlist.id)}
                     onShare={() => handleShare(playlist)}
-                    isLiked={false} // TODO: Implement like checking
+                    isLiked={likedIds.has(playlist.id) || !!playlist.is_liked}
                   />
                 );
               })}
@@ -292,7 +311,7 @@ export function UserProfileDisplay({ username }: UserProfileDisplayProps) {
       <PostPlaylistModal
         isOpen={isPostPlaylistModalOpen}
         onClose={() => setIsPostPlaylistModalOpen(false)}
-        onSuccess={(playlistId) => {
+        onSuccess={() => {
           setIsPostPlaylistModalOpen(false);
           // Navigation is handled by the modal itself
         }}

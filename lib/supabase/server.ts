@@ -1,37 +1,40 @@
-import { type CookieOptions, createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
-// Updated for Next.js 15 async cookies compatibility
+type CookieToSet = {
+  name: string;
+  value: string;
+  options: CookieOptions;
+};
+
+/**
+ * Server Supabase client. Uses `getAll` / `setAll` so chunked auth cookies
+ * (PKCE / OAuth) round-trip correctly — deprecated `get`/`set`/`remove` breaks
+ * `exchangeCodeForSession` with `bad_oauth_state`.
+ *
+ * @see https://supabase.com/docs/guides/auth/server-side/nextjs
+ */
 export async function createClient() {
   const cookieStore = await cookies();
-  
+
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
+        getAll() {
+          return cookieStore.getAll();
         },
-        set(name: string, value: string, options: CookieOptions) {
+        setAll(cookiesToSet: CookieToSet[]) {
           try {
-            cookieStore.set({ name, value, ...options });
-          } catch (_error) {
-            // The `set` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
-          }
-        },
-        remove(name: string, options: CookieOptions) {
-          try {
-            cookieStore.set({ name, value: '', ...options });
-          } catch (_error) {
-            // The `delete` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set({ name, value, ...options });
+            });
+          } catch {
+            // Called from a Server Component without mutable cookies — middleware refresh applies.
           }
         },
       },
-    }
+    },
   );
 }

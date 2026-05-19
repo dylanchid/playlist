@@ -87,7 +87,7 @@ export default function OnboardingFindFriendsPage() {
             ))}
           </CardContent>
           <CardContent className="flex justify-center">
-             <Link href="/melo-home" passHref>
+             <Link href="/" passHref>
                 <Button>Finish Onboarding</Button>
             </Link>
           </CardContent>

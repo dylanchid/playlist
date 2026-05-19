@@ -7,6 +7,11 @@ import {
   createAuthenticatedSpotifyClient,
 } from '@/lib/spotify/database';
 import { SpotifyAuth } from '@/lib/spotify/auth';
+import { buildSpotifyOAuthRedirectUriSnapshot } from '@/lib/spotify/oauth-redirect-uri';
+import {
+  logSpotifyRedirectSnapshot,
+  pickForwardingHeaders,
+} from '@/lib/spotify/oauth-debug';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
@@ -39,21 +44,24 @@ export async function getSpotifyConnectionStatusAction() {
  * Server Action to initiate the Spotify connection process.
  * Generates an authorization URL and redirects the user.
  */
-export async function initiateSpotifyConnectionAction(formData: FormData) {
+export async function initiateSpotifyConnectionAction(formData?: FormData) {
   const headerList = await headers();
-  const host = headerList.get('host') || '';
-  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-  
-  // In development with --experimental-https, the protocol is https
-  const forwardedProto = headerList.get('x-forwarded-proto');
-  const finalProtocol = forwardedProto || protocol;
-
-  const redirectUri = `${finalProtocol}://${host}/api/spotify/auth/callback`;
+  const forwarding = pickForwardingHeaders((name) => headerList.get(name));
+  const redirectSnapshot = buildSpotifyOAuthRedirectUriSnapshot({
+    host: forwarding.host,
+    forwardedProto: forwarding.xForwardedProto,
+  });
+  logSpotifyRedirectSnapshot('server_action_authorize', redirectSnapshot, {
+    forwardingHeaders: forwarding,
+    nextPublicAppUrl: process.env.NEXT_PUBLIC_APP_URL ?? null,
+    spotifyRedirectUriEnv: process.env.SPOTIFY_REDIRECT_URI ?? null,
+  });
+  const redirectUri = redirectSnapshot.redirectUri;
 
   console.log("Initiating Spotify connection. IMPORTANT: Ensure your Spotify app's redirect URI is set to this value.");
   console.log('VERIFY THIS REDIRECT URI:', redirectUri);
 
-  const pathname = formData.get('pathname') as string | null;
+  const pathname = formData?.get('pathname') as string | null;
   const { url, state, codeVerifier } = await SpotifyAuth.getAuthorizationUrl(redirectUri);
 
   const cookieStore = await cookies();

@@ -13,8 +13,8 @@ import { FriendSelector } from '@/components/users/friend-selector'
 import { Music, Clock, Share2, Copy, Check, Users, Globe } from 'lucide-react'
 import { formatDuration } from '@/types/playlist'
 import { cn } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
+import { sharePlaylist as sharePlaylistAction } from '@/app/actions/social'
 
 interface ShareModalProps {
   playlist: PlaylistWithUser
@@ -38,7 +38,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   const { user } = useAuth()
 
   const canShare = context.trim().length >= 10 && (shareType === 'public' || selectedFriends.length > 0)
-  const playlistUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/playlist/${playlist.id}`
+  const playlistUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/playlists/${playlist.id}`
 
   const handleShare = async () => {
     if (!canShare || !user) return
@@ -50,25 +50,12 @@ export const ShareModal: React.FC<ShareModalProps> = ({
       if (onShare) {
         await onShare(context.trim(), selectedFriends, shareType)
       } else {
-        // Default implementation using Supabase
-        const supabase = createClient()
-        
-        if (shareType === 'friend' && selectedFriends.length > 0) {
-          // Create playlist shares for each selected friend
-          const sharePromises = selectedFriends.map(friendId => 
-            supabase
-              .from('playlist_shares')
-              .insert({
-                playlist_id: playlist.id,
-                shared_by: user.id,
-                shared_with: friendId,
-                share_context: context.trim(),
-                share_type: 'friend'
-              })
-          )
-          
-          await Promise.all(sharePromises)
-        }
+        await sharePlaylistAction(
+          playlist.id,
+          selectedFriends,
+          context.trim(),
+          shareType,
+        )
       }
       
       // Reset form after successful share

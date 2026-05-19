@@ -1,5 +1,6 @@
 import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { devLog } from "@/lib/auth/dev-log";
 
 let supabaseInstance: SupabaseClient | null = null;
 let cleanupPerformed = false;
@@ -23,15 +24,11 @@ export function createClient() {
         // Handle auth state detection
         detectSessionInUrl: true,
         // Reduce debug logging noise in development
-        debug: false,
-        // Add retry configuration for network issues
-        retryInitialDelay: 1000,
-        retryMaxDelay: 5000,
-        retryAttempts: 3
+        debug: false
       },
       global: {
         // Add better error handling for network failures
-        fetch: (url, options = {}) => {
+        fetch: (url: RequestInfo | URL, options: RequestInit = {}) => {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
           
@@ -48,7 +45,7 @@ export function createClient() {
   if (typeof window !== 'undefined' && !cleanupPerformed) {
     const corsCleanupFlag = 'supabase-cors-cleanup-done-v2';
     if (!localStorage.getItem(corsCleanupFlag)) {
-      console.log('🧹 Clearing all auth state due to CORS configuration fix');
+      devLog('Clearing auth localStorage after CORS configuration fix');
       Object.keys(localStorage).forEach(key => {
         if (key.startsWith('sb-') || key.startsWith('supabase')) {
           localStorage.removeItem(key);
@@ -61,7 +58,7 @@ export function createClient() {
 
   // Store the singleton instance
   supabaseInstance = client;
-  console.log('🔌 Created Supabase client singleton instance');
+  devLog('Created Supabase client singleton');
   
   return client;
 }
