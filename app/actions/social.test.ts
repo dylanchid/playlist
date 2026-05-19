@@ -66,3 +66,55 @@ describe("sharePlaylist", () => {
     );
   });
 });
+
+describe("addPlaylistComment", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("requires authentication", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
+    const { addPlaylistComment } = await import("./social");
+    await expect(
+      addPlaylistComment("playlist-1", "Nice mix!"),
+    ).rejects.toThrow(/logged in/i);
+  });
+
+  it("inserts comment and friend activity", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "user-1" } },
+      error: null,
+    });
+
+    const commentInsert = vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({
+          data: { id: "c1", comment_text: "Great picks" },
+          error: null,
+        }),
+      }),
+    });
+    const activityInsert = vi.fn().mockResolvedValue({ error: null });
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "playlist_comments") {
+        return { insert: commentInsert };
+      }
+      if (table === "friend_activities") {
+        return { insert: activityInsert };
+      }
+      return { insert: vi.fn() };
+    });
+
+    const { addPlaylistComment } = await import("./social");
+    const result = await addPlaylistComment("playlist-1", "Great picks");
+
+    expect(result.success).toBe(true);
+    expect(activityInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        activity_type: "commented",
+        playlist_id: "playlist-1",
+      }),
+    );
+  });
+});

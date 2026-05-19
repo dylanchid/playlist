@@ -67,6 +67,7 @@ Versioned SQL lives under **`supabase/migrations/`** (oldest → newest by times
 |-----------|---------|
 | `20260212140000_prd_social_and_sharing.sql` | PRD social features: `context_story`, `playlist_shares` (nullable `shared_with` for public shares), `playlist_reactions`, `friend_activities`, RLS, compatibility helpers. Skips `user_follows` / follower policies when that table does not exist. |
 | `20260212140100_spotify_credentials.sql` | Removes Spotify OAuth columns from **`user_profiles`**; adds **`spotify_credentials`** and **`spotify_import_jobs`** with RLS. |
+| `20260212140200_playlist_comments.sql` | Contextual **`playlist_comments`** with RLS for public/owner-visible playlists. |
 
 **Before pushing:**
 
@@ -135,6 +136,9 @@ Useful npm scripts:
 | Playlist feed aggregation | `lib/playlists/enrich-feed.test.ts` |
 | UI playlist mapping | `lib/playlists/map-for-ui.test.ts` |
 | Share server actions | `app/actions/social.test.ts` |
+| Playlist comments | `app/actions/social.test.ts` (addPlaylistComment) |
+| Play URL helper | `lib/playlists/open-playlist.test.ts` |
+| Playlists list API | `app/api/playlists/route.test.ts` |
 | Infinite playlists API | `app/api/playlists/infinite/route.test.ts` |
 | Spotify OAuth redirect URI | `lib/spotify/oauth-redirect-uri.test.ts` |
 | Utilities | `utils/format.test.ts` |
@@ -165,6 +169,33 @@ Remote migrations (requires `npx supabase link`):
 ```bash
 npm run db:push
 ```
+
+RLS smoke (after push, uses `.env.local`):
+
+```bash
+npm run db:rls:check
+```
+
+E2E smoke (optional; requires running app + `PLAYWRIGHT_BASE_URL`):
+
+```bash
+npx playwright install chromium
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000 npm run test:e2e
+```
+
+### Staging verification log
+
+Record results here after running on staging (date / project ref / pass-fail):
+
+| Check | Staging result | Notes |
+|-------|----------------|-------|
+| Public playlists (anon infinite API) | _pending_ | |
+| Private playlist URL logged out | _pending_ | |
+| Share insert (10+ char context) | _pending_ | |
+| Reactions | _pending_ | |
+| Comments | _pending_ | Requires `20260212140200` migration |
+| Spotify credentials RLS | _pending_ | |
+| Safe profile columns | _pending_ | |
 
 ---
 

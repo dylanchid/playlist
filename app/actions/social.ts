@@ -188,3 +188,125 @@ export async function getFriendActivities() {
     return [] // Return empty if tables missing
   }
 }
+
+/**
+ * Fetches comments for a playlist with author profiles.
+ */
+export async function getPlaylistComments(playlistId: string) {
+  const supabase = await createClient()
+
+  try {
+    const { data: rows, error } = await supabase
+      .from('playlist_comments')
+      .select('*')
+      .eq('playlist_id', playlistId)
+      .order('created_at', { ascending: true })
+
+    if (error) throw error
+    if (!rows?.length) return []
+
+    const userIds = [...new Set(rows.map((r) => r.user_id))]
+    const { data: profiles } = await supabase
+      .from('user_profiles')
+      .select('id, username, avatar_url')
+      .in('id', userIds)
+
+    const profileById = Object.fromEntries(
+      (profiles ?? []).map((p) => [p.id, p]),
+    )
+
+    return rows.map((row) => ({
+      ...row,
+      user_profiles: profileById[row.user_id]
+        ? {
+            username: profileById[row.user_id].username,
+            avatar_url: profileById[row.user_id].avatar_url,
+          }
+        : undefined,
+    }))
+  } catch (error) {
+    console.error('Error fetching playlist comments:', error)
+    return []
+  }
+}
+
+/**
+ * Adds a comment to a playlist and records friend activity.
+ */
+export async function addPlaylistComment(
+  playlistId: string,
+  commentText: string,
+  respondsToContext = true,
+) {
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    throw new Error('You must be logged in to comment')
+  }
+
+  const trimmed = commentText.trim()
+  if (trimmed.length < 1) {
+    throw new Error('Comment cannot be empty')
+  }
+
+  try {
+    const { data: comment, error } = await supabase
+      .from('playlist_comments')
+      .insert({
+        playlist_id: playlistId,
+        user_id: user.id,
+        comment_text: trimmed,
+        responds_to_context: respondsToContext,
+      })
+      .select('*')
+      .single()
+
+    if (error) throw error
+
+    await supabase.from('friend_activities').insert({
+      user_id: user.id,
+      activity_type: 'commented',
+      playlist_id: playlistId,
+      activity_metadata: {
+        comment_text: trimmed,
+        comment_id: comment.id,
+      },
+    })
+
+    revalidatePath('/friends')
+    revalidatePath(`/playlists/${playlistId}`)
+    return { success: true, comment }
+  } catch (error) {
+    console.error('Error adding playlist comment:', error)
+    throw new Error('Failed to add comment. Database tables might be missing.')
+  }
+}
+
+/**
+ * Deletes the current user's comment.
+ */
+export async function deletePlaylistComment(commentId: string) {
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    throw new Error('You must be logged in to delete a comment')
+  }
+
+  try {
+    const { error } = await supabase
+      .from('playlist_comments')
+      .delete()
+      .eq('id', commentId)
+      .eq('user_id', user.id)
+
+    if (error) throw error
+
+    revalidatePath('/friends')
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting playlist comment:', error)
+    throw new Error('Failed to delete comment')
+  }
+}

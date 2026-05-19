@@ -3,32 +3,14 @@ import { createClient } from '@/lib/supabase/server'
 
 const LEGACY_LIKE_REACTION = 'fire'
 
-// Helper function to add CORS headers
-function corsHeaders() {
-  return {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  }
-}
-
 function isMissingTableError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false
   const message = 'message' in error ? String(error.message) : ''
   return message.includes('does not exist') || message.includes('playlist_reactions')
 }
 
-// Handle preflight requests
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: corsHeaders(),
-  })
-}
-
-// Check if user has liked a playlist
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -36,13 +18,7 @@ export async function GET(
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { 
-          status: 401,
-          headers: corsHeaders(),
-        }
-      )
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { id: playlistId } = await params
@@ -75,26 +51,18 @@ export async function GET(
       data = likeData
     }
 
-    return NextResponse.json({
-      liked: !!data
-    }, {
-      headers: corsHeaders(),
-    })
+    return NextResponse.json({ liked: !!data })
   } catch (error) {
     console.error('Error checking playlist like:', error)
     return NextResponse.json(
       { error: 'Failed to check like status' },
-      { 
-        status: 500,
-        headers: corsHeaders(),
-      }
+      { status: 500 }
     )
   }
 }
 
-// Toggle playlist like/unlike
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -102,18 +70,11 @@ export async function POST(
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { 
-          status: 401,
-          headers: corsHeaders(),
-        }
-      )
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { id: playlistId } = await params
 
-    // Check if already liked
     const { data: existingReaction, error: existingReactionError } = await supabase
       .from('playlist_reactions')
       .select('id')
@@ -145,12 +106,7 @@ export async function POST(
 
         if (error) throw error
 
-        return NextResponse.json({
-          action: 'unliked',
-          liked: false
-        }, {
-          headers: corsHeaders(),
-        })
+        return NextResponse.json({ action: 'unliked', liked: false })
       }
 
       const { error } = await supabase
@@ -159,16 +115,10 @@ export async function POST(
 
       if (error) throw error
 
-      return NextResponse.json({
-        action: 'liked',
-        liked: true
-      }, {
-        headers: corsHeaders(),
-      })
+      return NextResponse.json({ action: 'liked', liked: true })
     }
 
     if (existingReaction) {
-      // Unlike
       const { error } = await supabase
         .from('playlist_reactions')
         .delete()
@@ -176,35 +126,21 @@ export async function POST(
       
       if (error) throw error
       
-      return NextResponse.json({
-        action: 'unliked',
-        liked: false
-      }, {
-        headers: corsHeaders(),
-      })
-    } else {
-      // Like
-      const { error } = await supabase
-        .from('playlist_reactions')
-        .insert({ playlist_id: playlistId, user_id: user.id, reaction_type: LEGACY_LIKE_REACTION })
-      
-      if (error) throw error
-      
-      return NextResponse.json({
-        action: 'liked',
-        liked: true
-      }, {
-        headers: corsHeaders(),
-      })
+      return NextResponse.json({ action: 'unliked', liked: false })
     }
+
+    const { error } = await supabase
+      .from('playlist_reactions')
+      .insert({ playlist_id: playlistId, user_id: user.id, reaction_type: LEGACY_LIKE_REACTION })
+    
+    if (error) throw error
+    
+    return NextResponse.json({ action: 'liked', liked: true })
   } catch (error) {
     console.error('Error toggling playlist like:', error)
     return NextResponse.json(
       { error: 'Failed to toggle like' },
-      { 
-        status: 500,
-        headers: corsHeaders(),
-      }
+      { status: 500 }
     )
   }
-} 
+}

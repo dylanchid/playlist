@@ -2,15 +2,17 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { FeaturedCarousel } from "@/components/playlists/featured-carousel";
 import { FriendActivityFeed } from "@/components/social/friend-activity-feed";
 import { PlaylistSection } from "@/components/playlists/playlist-section";
 import { useInfinitePlaylists, usePlaylists } from "@/hooks/use-playlists";
+import { getFriendPlaylists } from "@/app/actions/user";
 import {
   mapPlaylistsForFeatured,
   mapPlaylistsForSection,
 } from "@/lib/playlists/map-for-ui";
-import type { PlaylistFilters } from "@/types/database";
+import type { PlaylistFilters, PlaylistWithUser } from "@/types/database";
 
 function EmptyHomeHint() {
   return (
@@ -63,9 +65,18 @@ export function HomePageContent() {
     [allPlaylists],
   );
 
+  const { data: friendRaw = [] } = useQuery({
+    queryKey: ["friend-playlists"],
+    queryFn: () => getFriendPlaylists(),
+    staleTime: 5 * 60 * 1000,
+  });
+
   const friendPicks = useMemo(
-    () => mapPlaylistsForSection(allPlaylists.slice(0, 8)),
-    [allPlaylists],
+    () =>
+      mapPlaylistsForSection(
+        (friendRaw as PlaylistWithUser[]).slice(0, 8),
+      ),
+    [friendRaw],
   );
 
   const hasAnyData = allPlaylists.length > 0;
@@ -93,7 +104,7 @@ export function HomePageContent() {
       {friendPicks.length > 0 && (
         <PlaylistSection
           title="Because Your Friends Like..."
-          subtitle="Discover music through your social network"
+          subtitle="Playlists from your music friends and shares"
           playlists={friendPicks}
           layout="carousel"
           itemsPerRow={2}

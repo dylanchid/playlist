@@ -41,7 +41,7 @@ export default function RankingsPage() {
     ...(filters.platform !== 'all' && { platform: filters.platform as 'spotify' | 'apple' | 'custom' })
   })
 
-  // Process ranking data dynamically
+  // Process ranking data from live engagement metrics
   const rankedPlaylists = useMemo(() => {
     let filtered = [...allPlaylists]
     if (filters.genre !== 'all') {
@@ -50,8 +50,11 @@ export default function RankingsPage() {
     
     return filtered.map(playlist => ({
       ...playlist,
-      rating: (Math.random() * 2 + 3).toFixed(1), // Mock rating until we have real ratings table
-      rank_change: Math.floor(Math.random() * 21) - 10 
+      rating: Math.min(
+        5,
+        (3 + (playlist.likes_count || 0) * 0.05 + (playlist.plays_count || 0) * 0.02),
+      ).toFixed(1),
+      rank_change: 0,
     })).sort((a, b) => {
       if (filters.sortBy === 'plays') return (b.plays_count || 0) - (a.plays_count || 0)
       if (filters.sortBy === 'recent') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -74,8 +77,8 @@ export default function RankingsPage() {
         total_likes: 0,
         total_plays: 0,
         playlists_count: 0,
-        avg_rating: (Math.random() * 2 + 3).toFixed(1),
-        rank_change: Math.floor(Math.random() * 21) - 10
+        avg_rating: '0',
+        rank_change: 0,
       }
       
       existing.total_likes += (playlist.likes_count || 0)
@@ -85,7 +88,14 @@ export default function RankingsPage() {
       userMap.set(userId, existing)
     })
     
-    return Array.from(userMap.values()).sort((a, b) => b.total_likes - a.total_likes)
+    return Array.from(userMap.values())
+      .map(curator => ({
+        ...curator,
+        avg_rating: curator.playlists_count > 0
+          ? Math.min(5, 3 + curator.total_likes / Math.max(curator.playlists_count, 1) * 0.1).toFixed(1)
+          : '3.0',
+      }))
+      .sort((a, b) => b.total_likes - a.total_likes)
   }, [allPlaylists])
 
   const genres = ['all', 'electronic', 'rock', 'hip-hop', 'jazz', 'indie', 'pop', 'classical']

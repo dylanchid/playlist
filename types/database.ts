@@ -110,6 +110,12 @@ export interface Database {
         Update: never;
         Relationships: EmptyRelationships;
       };
+      playlist_comments: {
+        Row: DbRecord<PlaylistComment>;
+        Insert: DbRecord<Omit<PlaylistComment, 'id' | 'created_at' | 'updated_at'>>;
+        Update: DbRecord<Partial<Omit<PlaylistComment, 'id' | 'playlist_id' | 'user_id' | 'created_at'>>>;
+        Relationships: EmptyRelationships;
+      };
       spotify_credentials: {
         Row: DbRecord<SpotifyCredential>;
         Insert: DbRecord<SpotifyCredentialInsert>;
@@ -277,6 +283,21 @@ export interface FriendActivity {
   target_user_id?: string;
   activity_metadata: Record<string, unknown>;
   created_at: string;
+}
+
+export interface PlaylistComment {
+  id: string;
+  playlist_id: string;
+  user_id: string;
+  comment_text: string;
+  responds_to_context: boolean;
+  parent_comment_id?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlaylistCommentWithUser extends PlaylistComment {
+  user_profiles?: Pick<UserProfile, 'username' | 'avatar_url'>;
 }
 
 // Extended types with computed fields

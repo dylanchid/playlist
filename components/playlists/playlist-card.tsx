@@ -15,6 +15,7 @@ import { CompactContextDisplay } from './playlist-context-display'
 import { ShareModal } from './share-modal'
 import { ReactionPicker } from '@/components/social/reaction-picker'
 import { sharePlaylist } from '@/app/actions/social'
+import { openPlaylistPlayer } from '@/lib/playlists/open-playlist'
 import { toast } from 'sonner'
 
 interface PlaylistCardProps {
@@ -131,8 +132,9 @@ export const PlaylistCard: React.FC<PlaylistCardProps> = ({
           className="absolute bottom-3 right-3 bg-white/90 hover:bg-white text-gray-800 shadow-lg transform translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300"
           onClick={(e) => {
             e.stopPropagation()
-            // TODO: Implement play functionality
+            openPlaylistPlayer(playlist)
           }}
+          aria-label="Play playlist"
         >
           <Play className="w-4 h-4" />
         </Button>

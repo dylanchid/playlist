@@ -49,13 +49,23 @@ Only if you are **not** using CLI migrations yet:
    ```
 3. **Share:** Open a playlist → **Share** → confirm story length validation (minimum length enforced in UI/actions).
 4. **Reactions:** React to a playlist; counts should update when **`playlist_reactions`** exists and RLS allows your user.
-5. **Feed:** Open **Friends** (or wherever **`FriendActivityFeed`** is mounted) after interactions.
+5. **Feed:** Open **Friends** after interactions.
+6. **Comments:** On a playlist detail page, post a comment (requires `20260212140200_playlist_comments` migration via `npm run db:push`).
 
-Optional connectivity / schema smoke checks (Node, uses `.env.local`):
+Optional connectivity / schema smoke checks (Node, uses `.env.local` and optional `ws` for Node 20):
 
 ```bash
 npm run db:migration:status
 npm run db:migration:verify
+npm run db:rls:check
+```
+
+E2E (optional; app must be running):
+
+```bash
+npx playwright install chromium
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000 npm run test:e2e
+# Authenticated share smoke: E2E_EMAIL=... E2E_PASSWORD=... (same base URL)
 ```
 
 CI expects **`npm run typecheck`**, **`npm run lint`**, **`npm run test`**, and **`npm run build`** to pass (see **`.github/workflows/ci.yml`**).

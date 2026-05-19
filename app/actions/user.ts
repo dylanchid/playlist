@@ -3,6 +3,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import type { PlaylistWithUser } from '@/types/database';
+import { enrichPlaylistsWithEngagement } from '@/lib/playlists/enrich-feed';
 
 // Reusable function to get the current user ID - consider moving to a shared file
 async function getUserId(): Promise<string> {
@@ -186,10 +188,13 @@ export async function getSuggestions() {
   }
 }
 
-export async function getFriendPlaylists() {
+export async function getFriendPlaylists(): Promise<PlaylistWithUser[]> {
   try {
-    const userId = await getUserId();
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const userId = user.id;
     
     const { data: friendsData } = await supabase
       .from('music_friends')
@@ -199,9 +204,38 @@ export async function getFriendPlaylists() {
       
     const friendIds =
       friendsData?.map((f: { friend_id: string }) => f.friend_id) || [];
-    
-    if (friendIds.length === 0) return [];
-    
+
+    const playlistIds = new Set<string>();
+
+    if (friendIds.length > 0) {
+      const { data: friendPlaylists } = await supabase
+        .from('playlists')
+        .select('id')
+        .in('user_id', friendIds)
+        .eq('is_public', true)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      for (const row of friendPlaylists ?? []) {
+        playlistIds.add(row.id);
+      }
+    }
+
+    const { data: shares } = await supabase
+      .from('playlist_shares')
+      .select('playlist_id')
+      .or(`shared_with.eq.${userId},and(share_type.eq.public,shared_with.is.null)`)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    for (const share of shares ?? []) {
+      if (share.playlist_id) playlistIds.add(share.playlist_id);
+    }
+
+    if (playlistIds.size === 0) return [];
+
+    const ids = [...playlistIds].slice(0, 12);
+
     const { data, error } = await supabase
       .from('playlists')
       .select(`
@@ -212,14 +246,25 @@ export async function getFriendPlaylists() {
           avatar_url
         )
       `)
-      .in('user_id', friendIds)
+      .in('id', ids)
       .eq('is_public', true)
-      .order('created_at', { ascending: false })
-      .limit(10);
+      .order('created_at', { ascending: false });
       
     if (error) throw error;
-    
-    return data || [];
+
+    const rows = data ?? [];
+
+    const { data: reactions } = await supabase
+      .from('playlist_reactions')
+      .select('playlist_id, reaction_type, user_id')
+      .in('playlist_id', ids);
+
+    const { data: plays } = await supabase
+      .from('playlist_plays')
+      .select('playlist_id')
+      .in('playlist_id', ids);
+
+    return enrichPlaylistsWithEngagement(rows, reactions, plays, userId) as PlaylistWithUser[];
   } catch (error) {
     console.error("Error in getFriendPlaylists:", error);
     return [];

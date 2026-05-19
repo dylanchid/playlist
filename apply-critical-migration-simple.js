@@ -203,6 +203,26 @@ async function verifyMigration() {
       }
     }
     console.log('✅ friend_activities table accessible');
+
+    console.log('5️⃣  Testing playlist_comments table...');
+    const { error: commentsError } = await supabaseAdmin
+      .from('playlist_comments')
+      .select('*')
+      .limit(1);
+    
+    if (commentsError) {
+      if (
+        commentsError.message.includes('does not exist') ||
+        commentsError.message.includes('schema cache')
+      ) {
+        console.log('⚠️  playlist_comments table not found — run npm run db:push (20260212140200_playlist_comments.sql)');
+      } else {
+        console.log('❌ playlist_comments error:', commentsError.message);
+        return false;
+      }
+    } else {
+      console.log('✅ playlist_comments table accessible');
+    }
     
     console.log('\n🎉 Migration verification successful!');
     console.log('\n✅ Ready for context-required sharing features:');
