@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Music, Clock, Users, Lock } from "lucide-react";
+import { Search, Music, Users, Lock } from "lucide-react";
 import { useSpotifyPlaylists } from "@/lib/spotify/queries";
 import { PlaylistSelection } from "../post-playlist-modal";
 import { cn } from "@/lib/utils";
@@ -26,15 +27,6 @@ export function SpotifyPlaylistList({ onSelect, selectedPlaylist }: SpotifyPlayl
     playlist.description?.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
 
-  const formatDuration = (totalMs: number) => {
-    const hours = Math.floor(totalMs / 3600000);
-    const minutes = Math.floor((totalMs % 3600000) / 60000);
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
-  };
-
   const isSelected = (playlistId: string) => {
     return selectedPlaylist?.type === "spotify" && 
            selectedPlaylist?.spotifyPlaylist?.id === playlistId;
@@ -46,7 +38,7 @@ export function SpotifyPlaylistList({ onSelect, selectedPlaylist }: SpotifyPlayl
         <Music className="w-16 h-16 mx-auto mb-4 text-gray-600" />
         <h3 className="text-lg font-semibold mb-2">Failed to Load Playlists</h3>
         <p className="text-gray-400 mb-4">
-          We couldn't fetch your Spotify playlists. Please try again.
+          We couldn&apos;t fetch your Spotify playlists. Please try again.
         </p>
         <Button 
           variant="outline" 
@@ -119,12 +111,14 @@ export function SpotifyPlaylistList({ onSelect, selectedPlaylist }: SpotifyPlayl
               )}
             >
               {/* Playlist Cover */}
-              <div className="w-14 h-14 rounded-lg overflow-hidden bg-gray-800 flex-shrink-0">
+              <div className="w-14 h-14 rounded-lg overflow-hidden bg-gray-800 flex-shrink-0 relative">
                 {playlist.images?.[0] ? (
-                  <img
+                  <Image
                     src={playlist.images[0].url}
                     alt={playlist.name}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="56px"
+                    className="object-cover"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">

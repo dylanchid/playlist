@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { Music, ExternalLink, X, Plus } from "lucide-react";
 import { PlaylistSelection } from "../post-playlist-modal";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 
 interface PlaylistDetailsFormProps {
   selection: PlaylistSelection;
@@ -30,7 +30,6 @@ export function PlaylistDetailsForm({
   isCreating, 
   setIsCreating 
 }: PlaylistDetailsFormProps) {
-  const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -144,12 +143,14 @@ export function PlaylistDetailsForm({
       {selection.type === "spotify" && selection.spotifyPlaylist && (
         <div className="bg-gray-50 rounded-lg p-4">
           <div className="flex items-start gap-4">
-            <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
+            <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0 relative">
               {selection.spotifyPlaylist.images?.[0] ? (
-                <img
+                <Image
                   src={selection.spotifyPlaylist.images[0].url}
                   alt={selection.spotifyPlaylist.name}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="64px"
+                  className="object-cover"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">

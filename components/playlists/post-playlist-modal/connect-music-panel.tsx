@@ -21,7 +21,7 @@ export function ConnectMusicPanel({ onConnect }: ConnectMusicPanelProps) {
       // Note: The mutation handles the redirect, so we won't reach this point
       // in normal flow, but it's here for completeness
       onConnect();
-    } catch (error) {
+    } catch {
       toast.error("Failed to connect to Spotify");
       setIsConnecting(false);
     }
@@ -99,7 +99,7 @@ export function ConnectMusicPanel({ onConnect }: ConnectMusicPanelProps) {
       {/* Manual Option */}
       <div className="text-center pt-4 border-t border-gray-800">
         <p className="text-sm text-gray-500 mb-3">
-          Don't want to connect? You can still create custom playlists manually.
+          Don&apos;t want to connect? You can still create custom playlists manually.
         </p>
         <Button 
           variant="outline" 

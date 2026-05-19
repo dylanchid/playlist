@@ -4,10 +4,65 @@ import {
   PlaylistWithUser, 
   PlaylistFilters, 
   CreatePlaylistData, 
+  ReactionType,
   UpdatePlaylistData
 } from '@/types/database'
 
+type PlaylistsUpdate = Database['public']['Tables']['playlists']['Update']
+
 export type SupabaseClientType = SupabaseClient<Database>
+
+type ReactionCounts = Record<ReactionType, number>
+
+const createEmptyReactions = (): ReactionCounts => ({
+  fire: 0,
+  perfect: 0,
+  thoughtful: 0,
+  energy: 0,
+})
+
+async function fetchReactionSummary(
+  supabase: SupabaseClientType,
+  playlistIds: string[],
+  currentUserId?: string
+): Promise<{
+  reactionCounts: Record<string, ReactionCounts>
+  reactionTotals: Record<string, number>
+  userReactions: Record<string, ReactionType | null>
+}> {
+  if (playlistIds.length === 0) {
+    return { reactionCounts: {}, reactionTotals: {}, userReactions: {} }
+  }
+
+  const { data, error } = await supabase
+    .from('playlist_reactions')
+    .select('playlist_id,reaction_type,user_id')
+    .in('playlist_id', playlistIds)
+
+  if (error) {
+    console.warn('Failed to fetch playlist reactions:', error.message)
+    return { reactionCounts: {}, reactionTotals: {}, userReactions: {} }
+  }
+
+  const reactionCounts: Record<string, ReactionCounts> = {}
+  const reactionTotals: Record<string, number> = {}
+  const userReactions: Record<string, ReactionType | null> = {}
+
+  for (const reaction of data ?? []) {
+    if (!reactionCounts[reaction.playlist_id]) {
+      reactionCounts[reaction.playlist_id] = createEmptyReactions()
+    }
+
+    reactionCounts[reaction.playlist_id][reaction.reaction_type as ReactionType] += 1
+    reactionTotals[reaction.playlist_id] = (reactionTotals[reaction.playlist_id] || 0) + 1
+
+    if (currentUserId && reaction.user_id === currentUserId) {
+      userReactions[reaction.playlist_id] = reaction.reaction_type as ReactionType
+    }
+  }
+
+  return { reactionCounts, reactionTotals, userReactions }
+}
 
 // Fetch playlists with filters and user data
 export async function fetchPlaylists(
@@ -56,22 +111,16 @@ export async function fetchPlaylists(
     return []
   }
 
-  const [likesData, playsData] = await Promise.all([
-    supabase
-      .from('playlist_likes')
-      .select('playlist_id')
-      .in('playlist_id', playlistIds),
+  const { data: authData } = await supabase.auth.getUser()
+  const currentUserId = authData.user?.id
+
+  const [reactionSummary, playsData] = await Promise.all([
+    fetchReactionSummary(supabase, playlistIds, currentUserId),
     supabase
       .from('playlist_plays')
       .select('playlist_id')
       .in('playlist_id', playlistIds)
   ])
-
-  // Count likes and plays for each playlist
-  const likeCounts = likesData.data?.reduce((acc, like) => {
-    acc[like.playlist_id] = (acc[like.playlist_id] || 0) + 1
-    return acc
-  }, {} as Record<string, number>) || {}
 
   const playCounts = playsData.data?.reduce((acc, play) => {
     acc[play.playlist_id] = (acc[play.playlist_id] || 0) + 1
@@ -81,8 +130,10 @@ export async function fetchPlaylists(
   // Combine data
   return data?.map(playlist => ({
     ...playlist,
-    likes_count: likeCounts[playlist.id] || 0,
+    likes_count: reactionSummary.reactionTotals[playlist.id] || 0,
     plays_count: playCounts[playlist.id] || 0,
+    reactions: reactionSummary.reactionCounts[playlist.id] || createEmptyReactions(),
+    user_reaction: reactionSummary.userReactions[playlist.id] || null,
   })) || []
 }
 
@@ -117,12 +168,12 @@ export async function fetchPlaylistById(
   if (error) throw error
   if (!data) return null
 
-  // Get likes and plays count
-  const [likesData, playsData] = await Promise.all([
-    supabase
-      .from('playlist_likes')
-      .select('id')
-      .eq('playlist_id', id),
+  const { data: authData } = await supabase.auth.getUser()
+  const currentUserId = authData.user?.id
+
+  // Get reactions and plays count
+  const [reactionSummary, playsData] = await Promise.all([
+    fetchReactionSummary(supabase, [id], currentUserId),
     supabase
       .from('playlist_plays')
       .select('id')
@@ -131,8 +182,10 @@ export async function fetchPlaylistById(
 
   return {
     ...data,
-    likes_count: likesData.data?.length || 0,
+    likes_count: reactionSummary.reactionTotals[id] || 0,
     plays_count: playsData.data?.length || 0,
+    reactions: reactionSummary.reactionCounts[id] || createEmptyReactions(),
+    user_reaction: reactionSummary.userReactions[id] || null,
   }
 }
 
@@ -169,6 +222,8 @@ export async function createPlaylist(
     ...data,
     likes_count: 0,
     plays_count: 0,
+    reactions: createEmptyReactions(),
+    user_reaction: null,
   }
 }
 
@@ -180,7 +235,7 @@ export async function updatePlaylist(
 ): Promise<PlaylistWithUser> {
   const { data, error } = await supabase
     .from('playlists')
-    .update(updates)
+    .update(updates as PlaylistsUpdate)
     .eq('id', id)
     .select(`
       *,
@@ -194,12 +249,12 @@ export async function updatePlaylist(
 
   if (error) throw error
 
-  // Get current likes and plays count
-  const [likesData, playsData] = await Promise.all([
-    supabase
-      .from('playlist_likes')
-      .select('id')
-      .eq('playlist_id', id),
+  const { data: authData } = await supabase.auth.getUser()
+  const currentUserId = authData.user?.id
+
+  // Get current reactions and plays count
+  const [reactionSummary, playsData] = await Promise.all([
+    fetchReactionSummary(supabase, [id], currentUserId),
     supabase
       .from('playlist_plays')
       .select('id')
@@ -208,8 +263,10 @@ export async function updatePlaylist(
 
   return {
     ...data,
-    likes_count: likesData.data?.length || 0,
+    likes_count: reactionSummary.reactionTotals[id] || 0,
     plays_count: playsData.data?.length || 0,
+    reactions: reactionSummary.reactionCounts[id] || createEmptyReactions(),
+    user_reaction: reactionSummary.userReactions[id] || null,
   }
 }
 
@@ -393,6 +450,8 @@ export async function getSharedPlaylists(
       shared_at: share.created_at,
       likes_count: 0, // Will be populated separately if needed
       plays_count: 0,
+      reactions: createEmptyReactions(),
+      user_reaction: null,
     };
   }) || []
-} 
+}

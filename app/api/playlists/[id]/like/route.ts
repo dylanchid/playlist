@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+const LEGACY_LIKE_REACTION = 'fire'
+
 // Helper function to add CORS headers
 function corsHeaders() {
   return {
@@ -8,6 +10,12 @@ function corsHeaders() {
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   }
+}
+
+function isMissingTableError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  const message = 'message' in error ? String(error.message) : ''
+  return message.includes('does not exist') || message.includes('playlist_reactions')
 }
 
 // Handle preflight requests
@@ -39,14 +47,33 @@ export async function GET(
 
     const { id: playlistId } = await params
 
-    const { data, error } = await supabase
-      .from('playlist_likes')
+    let data: { id: string } | null = null
+
+    const { data: reactionData, error: reactionError } = await supabase
+      .from('playlist_reactions')
       .select('id')
       .eq('playlist_id', playlistId)
       .eq('user_id', user.id)
+      .eq('reaction_type', LEGACY_LIKE_REACTION)
       .single()
 
-    if (error && error.code !== 'PGRST116') throw error
+    if (reactionError && reactionError.code !== 'PGRST116') {
+      if (!isMissingTableError(reactionError)) throw reactionError
+    } else {
+      data = reactionData
+    }
+
+    if (!data && isMissingTableError(reactionError)) {
+      const { data: likeData, error: likeError } = await supabase
+        .from('playlist_likes')
+        .select('id')
+        .eq('playlist_id', playlistId)
+        .eq('user_id', user.id)
+        .single()
+
+      if (likeError && likeError.code !== 'PGRST116') throw likeError
+      data = likeData
+    }
 
     return NextResponse.json({
       liked: !!data
@@ -87,20 +114,65 @@ export async function POST(
     const { id: playlistId } = await params
 
     // Check if already liked
-    const { data: existingLike } = await supabase
-      .from('playlist_likes')
+    const { data: existingReaction, error: existingReactionError } = await supabase
+      .from('playlist_reactions')
       .select('id')
       .eq('playlist_id', playlistId)
       .eq('user_id', user.id)
+      .eq('reaction_type', LEGACY_LIKE_REACTION)
       .single()
 
-    if (existingLike) {
-      // Unlike
-      const { error } = await supabase
+    if (existingReactionError && existingReactionError.code !== 'PGRST116' && !isMissingTableError(existingReactionError)) {
+      throw existingReactionError
+    }
+
+    if (isMissingTableError(existingReactionError)) {
+      const { data: existingLike, error: existingLikeError } = await supabase
         .from('playlist_likes')
-        .delete()
+        .select('id')
         .eq('playlist_id', playlistId)
         .eq('user_id', user.id)
+        .single()
+
+      if (existingLikeError && existingLikeError.code !== 'PGRST116') throw existingLikeError
+
+      if (existingLike) {
+        const { error } = await supabase
+          .from('playlist_likes')
+          .delete()
+          .eq('playlist_id', playlistId)
+          .eq('user_id', user.id)
+
+        if (error) throw error
+
+        return NextResponse.json({
+          action: 'unliked',
+          liked: false
+        }, {
+          headers: corsHeaders(),
+        })
+      }
+
+      const { error } = await supabase
+        .from('playlist_likes')
+        .insert({ playlist_id: playlistId, user_id: user.id })
+
+      if (error) throw error
+
+      return NextResponse.json({
+        action: 'liked',
+        liked: true
+      }, {
+        headers: corsHeaders(),
+      })
+    }
+
+    if (existingReaction) {
+      // Unlike
+      const { error } = await supabase
+        .from('playlist_reactions')
+        .delete()
+        .eq('id', existingReaction.id)
       
       if (error) throw error
       
@@ -113,8 +185,8 @@ export async function POST(
     } else {
       // Like
       const { error } = await supabase
-        .from('playlist_likes')
-        .insert({ playlist_id: playlistId, user_id: user.id })
+        .from('playlist_reactions')
+        .insert({ playlist_id: playlistId, user_id: user.id, reaction_type: LEGACY_LIKE_REACTION })
       
       if (error) throw error
       

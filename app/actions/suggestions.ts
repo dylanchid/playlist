@@ -30,7 +30,7 @@ export async function getFriendSuggestionsAction() {
   const { data: userProfile, error: profileError } = await supabase
     .from('user_profiles')
     .select('music_preferences')
-    .eq('user_id', currentUserId)
+    .eq('id', currentUserId)
     .single();
 
   if (profileError || !userProfile?.music_preferences?.genres?.length) {
@@ -43,8 +43,8 @@ export async function getFriendSuggestionsAction() {
   // likely using a database function for matching.
   const { data: similarUsers, error: similarUsersError } = await supabase
     .from('user_profiles')
-    .select('user_id, display_name, bio')
-    .neq('user_id', currentUserId) // Exclude current user
+    .select('id, display_name, bio')
+    .neq('id', currentUserId) // Exclude current user
     // The following is a placeholder for a real similarity search
     .limit(10);
 
@@ -53,8 +53,8 @@ export async function getFriendSuggestionsAction() {
     return { suggestions: FEATURED_CURATORS.filter(c => c.id !== currentUserId) };
   }
   
-  const suggestions = similarUsers.map((u: { user_id: string; display_name: string; bio: string }) => ({
-    id: u.user_id,
+  const suggestions = similarUsers.map((u: { id: string; display_name: string | null; bio: string | null }) => ({
+    id: u.id,
     display_name: u.display_name,
     bio: u.bio,
   }));

@@ -74,7 +74,7 @@ export function SpotifyConnectionStatus({
         </div>
 
         {/* Rate Limit Info */}
-        {isConnected && connectionStatus?.rateLimit && (
+        {isConnected && 'rateLimit' in (connectionStatus ?? {}) && connectionStatus?.rateLimit && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Clock className="w-4 h-4" />
             <span>

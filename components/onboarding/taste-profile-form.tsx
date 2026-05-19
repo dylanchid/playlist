@@ -11,15 +11,6 @@ import { toast } from 'sonner';
 import { GenreGrid } from './genre-grid';
 import { MoodSelector } from './mood-selector';
 
-// Mock data, this could come from a CMS or a constants file
-const ALL_GENRES = [
-  'Rock', 'Pop', 'Hip Hop', 'Jazz', 'Blues', 'Country', 
-  'Electronic', 'R&B', 'Classical', 'Reggae', 'Indie', 'Metal'
-];
-const ALL_MOODS = ['Focus', 'Workout', 'Chill', 'Party', 'Sad', 'Happy'];
-
-
-
 // --- Main Form Component ---
 
 export function TasteProfileForm() {

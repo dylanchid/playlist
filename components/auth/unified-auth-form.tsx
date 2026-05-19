@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useSupabase } from "@/hooks/use-supabase";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,11 +13,94 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Mail, Apple, Loader2, Eye, EyeOff } from "lucide-react";
+import { Apple, Chrome, Loader2, Eye, EyeOff, Music2 } from "lucide-react";
+import type { Provider } from "@supabase/auth-js";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 import { authDebugger } from "@/utils/auth-debug";
+
+function formatSocialAuthError(error: unknown): string {
+  const pieces: string[] = [];
+  if (error && typeof error === "object") {
+    const o = error as Record<string, unknown>;
+    for (const k of ["message", "msg", "error_description", "code", "error_code"]) {
+      const v = o[k];
+      if (typeof v === "string") pieces.push(v);
+      if (typeof v === "number") pieces.push(String(v));
+    }
+  } else if (error instanceof Error) {
+    pieces.push(error.message);
+  } else if (typeof error === "string") {
+    pieces.push(error);
+  }
+  const raw = pieces.join(" ") || "Social sign-in failed";
+
+  if (/not enabled|Unsupported provider|validation_failed/i.test(raw)) {
+    return "This sign-in provider is not enabled for the Supabase project your app is using. Fix: Dashboard → Authentication → Providers — turn on Google / Apple / Spotify, enter Client ID + Client Secret for each, click Save. In Google/Apple/Spotify developer consoles, use Supabase’s redirect URL (https://<project-ref>.supabase.co/auth/v1/callback). Then restart `npm run dev` if you changed .env. While dev is running, open /api/auth/oauth-status — if google/apple/spotify are false, Auth still sees them off (wrong project or not saved).";
+  }
+  if (/redirect_uri|not matching configuration/i.test(raw)) {
+    return `${raw} — For “Continue with Spotify” (Supabase Auth), the Spotify app’s Redirect URIs must include your Supabase callback exactly: https://<your-project-ref>.supabase.co/auth/v1/callback (not your Next.js /api/spotify path). Use the same Spotify Client ID + Client Secret in Supabase → Authentication → Providers → Spotify. Before clicking Spotify again, open the browser DevTools console: this app logs [Supabase Auth OAuth] with the exact redirect_uri Spotify receives.`;
+  }
+  if (/bad_oauth_state|OAuth state has expired/i.test(raw)) {
+    return `${raw} — Often caused by switching between localhost and 127.0.0.1: PKCE cookies are per-host. Set NEXT_PUBLIC_APP_URL to the origin you use, open the app at that exact URL, and match Supabase Authentication → URL Configuration (Site URL + Redirect URLs). Or clear site data and try again in one tab.`;
+  }
+  if (/provider_email_needs_verification|email needs verification|Unverified email with spotify/i.test(raw)) {
+    return "Spotify sign-in is blocked until the Spotify account email is confirmed in Supabase. Check that inbox for a Supabase email and click the link, or (as a project admin) turn off Confirm email under Authentication → Providers → Email in the Supabase Dashboard.";
+  }
+  return raw;
+}
+
+function getAuthSiteOrigin(): string {
+  const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "");
+  if (fromEnv) return fromEnv;
+  if (typeof window !== "undefined") return window.location.origin;
+  return "";
+}
+
+function authOAuthDebugEnabled(): boolean {
+  return (
+    process.env.NODE_ENV === "development" ||
+    process.env.NEXT_PUBLIC_AUTH_OAUTH_DEBUG === "1" ||
+    process.env.NEXT_PUBLIC_AUTH_OAUTH_DEBUG === "true"
+  );
+}
+
+function logSupabaseOAuthAuthorizeUrl(provider: Provider, oauthUrl: string, appRedirectTo: string): void {
+  if (!authOAuthDebugEnabled()) return;
+  try {
+    const u = new URL(oauthUrl);
+    const redirectUriForSpotify = u.searchParams.get("redirect_uri");
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const expectedSupabaseCallback =
+      supabaseUrl != null && supabaseUrl.length > 0
+        ? `${new URL(supabaseUrl).origin}/auth/v1/callback`
+        : null;
+    console.info("[Supabase Auth OAuth]", {
+      phase: "signInWithOAuth_url_ready",
+      provider,
+      windowOrigin: typeof window !== "undefined" ? window.location.origin : null,
+      appRedirectToAfterSupabase: appRedirectTo,
+      spotifyAuthorizeUrlHost: u.hostname,
+      redirectUriSentToSpotify: redirectUriForSpotify,
+      expectedSupabaseCallbackFromEnv: expectedSupabaseCallback,
+      redirectUriMatchesEnvCallback:
+        redirectUriForSpotify != null &&
+        expectedSupabaseCallback != null &&
+        redirectUriForSpotify === expectedSupabaseCallback,
+      note:
+        "Terminal will not show this log — it is client-side. Spotify’s “redirect_uri: Not matching configuration” uses redirectUriSentToSpotify; add that exact string in the Spotify Developer app → Redirect URIs. Our [Spotify OAuth] server logs only apply to “Connect Spotify” (playlist linking), not this login button.",
+    });
+  } catch {
+    console.info("[Supabase Auth OAuth]", {
+      phase: "signInWithOAuth_url_ready",
+      provider,
+      windowOrigin: typeof window !== "undefined" ? window.location.origin : null,
+      appRedirectToAfterSupabase: appRedirectTo,
+      parseError: true,
+    });
+  }
+}
 
 type AuthMode = 'login' | 'signup' | 'forgot-password';
 
@@ -229,7 +312,7 @@ export function UnifiedAuthForm({
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/update-password`,
+        redirectTo: `${getAuthSiteOrigin()}/auth/update-password`,
       });
       
       if (error) throw error;
@@ -242,21 +325,70 @@ export function UnifiedAuthForm({
     }
   };
 
-  const handleSocialAuth = async (provider: 'google' | 'apple') => {
+  const socialProviders: {
+    id: Provider;
+    label: string;
+    icon: ReactNode;
+    className?: string;
+  }[] = [
+    {
+      id: "google",
+      label: "Continue with Google",
+      icon: <Chrome className="mr-2 h-4 w-4" aria-hidden />,
+    },
+    {
+      id: "apple",
+      label: "Continue with Apple",
+      icon: <Apple className="mr-2 h-4 w-4" aria-hidden />,
+    },
+    {
+      id: "spotify",
+      label: "Continue with Spotify",
+      icon: <Music2 className="mr-2 h-4 w-4" aria-hidden />,
+      className:
+        "border-[#1DB954]/60 text-[#168d40] hover:bg-[#1DB954]/10 dark:text-[#1ed760]",
+    },
+  ];
+
+  const handleSocialAuth = async (provider: Provider) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const siteOrigin = getAuthSiteOrigin();
+      if (
+        typeof window !== "undefined" &&
+        siteOrigin &&
+        window.location.origin !== siteOrigin
+      ) {
+        const next = `${siteOrigin}${window.location.pathname}${window.location.search}${window.location.hash}`;
+        window.location.replace(next);
+        return;
+      }
+
+      const redirectSuffix = redirectTo
+        ? `?redirect=${encodeURIComponent(redirectTo)}`
+        : "";
+      const appRedirectTo = `${siteOrigin}/auth/callback${redirectSuffix}`;
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback${redirectTo ? `?redirect=${redirectTo}` : ''}`,
+          redirectTo: appRedirectTo,
         },
       });
 
       if (error) throw error;
+      if (data?.url) {
+        logSupabaseOAuthAuthorizeUrl(provider, data.url, appRedirectTo);
+        window.location.assign(data.url);
+        return;
+      }
+      setError(
+        "Sign-in did not return a redirect URL. In Supabase → Authentication → Providers, enable the provider and save; confirm Site URL and Redirect URLs include this app’s /auth/callback.",
+      );
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "Social authentication failed");
+      setError(formatSocialAuthError(error));
+    } finally {
       setIsLoading(false);
     }
   };
@@ -291,24 +423,19 @@ export function UnifiedAuthForm({
           {showSocialAuth && currentMode !== 'forgot-password' && (
             <>
               <div className="flex flex-col gap-3 mb-6">
-                <Button
-                  variant="outline"
-                  onClick={() => handleSocialAuth('google')}
-                  disabled={isLoading}
-                  className="w-full"
-                >
-                  <Mail className="mr-2 h-4 w-4" />
-                  Continue with Google
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => handleSocialAuth('apple')}
-                  disabled={isLoading}
-                  className="w-full"
-                >
-                  <Apple className="mr-2 h-4 w-4" />
-                  Continue with Apple
-                </Button>
+                {socialProviders.map((p) => (
+                  <Button
+                    key={p.id}
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleSocialAuth(p.id)}
+                    disabled={isLoading}
+                    className={cn("w-full", p.className)}
+                  >
+                    {p.icon}
+                    {p.label}
+                  </Button>
+                ))}
               </div>
               <div className="relative mb-6">
                 <Separator />

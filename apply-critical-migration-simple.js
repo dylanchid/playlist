@@ -1,11 +1,31 @@
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config({ path: '.env.local' });
 
-// Create admin client for schema changes
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+function createVerifyClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) {
+    throw new Error(
+      'Missing NEXT_PUBLIC_SUPABASE_URL or Supabase key in .env.local',
+    );
+  }
+  let WebSocket;
+  try {
+    WebSocket = require('ws');
+  } catch {
+    WebSocket = undefined;
+  }
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    ...(WebSocket
+      ? { realtime: { transport: WebSocket } }
+      : {}),
+  });
+}
+
+const supabaseAdmin = createVerifyClient();
 
 async function applyCriticalMigration() {
   console.log('🚀 Applying Critical Database Migration for Context-Required Sharing...\n');
@@ -28,9 +48,9 @@ async function applyCriticalMigration() {
       console.log('\n📋 Manual Steps Required:');
       console.log('1. Go to your Supabase project dashboard');
       console.log('2. Navigate to SQL Editor');
-      console.log('3. Copy and paste the contents of database-migration-critical.sql');
+      console.log('3. Prefer: npm run db:push (see supabase/migrations/). Legacy SQL archived under docs/archive/migrations-legacy/');
       console.log('4. Execute the SQL migration');
-      console.log('5. Run verification: node check-schema.js');
+      console.log('5. Run verification: node apply-critical-migration-simple.js verify');
       return;
     }
     
@@ -70,14 +90,48 @@ async function applyCriticalMigration() {
     } catch (e) {
       console.log('❌ playlist_shares table missing - migration needed');
     }
+
+    // Test if playlist_reactions exists
+    try {
+      const { error: reactionsError } = await supabaseAdmin
+        .from('playlist_reactions')
+        .select('*')
+        .limit(1);
+      
+      if (reactionsError && reactionsError.message.includes('does not exist')) {
+        console.log('❌ playlist_reactions table missing - migration needed');
+      } else {
+        console.log('✅ playlist_reactions table already exists');
+      }
+    } catch (e) {
+      console.log('❌ playlist_reactions table missing - migration needed');
+    }
+
+    // Test if friend_activities exists
+    try {
+      const { error: activitiesError } = await supabaseAdmin
+        .from('friend_activities')
+        .select('*')
+        .limit(1);
+      
+      if (activitiesError && activitiesError.message.includes('does not exist')) {
+        console.log('❌ friend_activities table missing - migration needed');
+      } else {
+        console.log('✅ friend_activities table already exists');
+      }
+    } catch (e) {
+      console.log('❌ friend_activities table missing - migration needed');
+    }
     
     console.log('\n📋 Required Manual Migration Steps:');
     console.log('1. Open Supabase Dashboard → SQL Editor');
-    console.log('2. Execute database-migration-critical.sql');
-    console.log('3. Verify with: node check-schema.js');
+    console.log('2. Run: npm run db:push (or legacy SQL in docs/archive/migrations-legacy/)');
+    console.log('3. Verify with: node apply-critical-migration-simple.js verify');
     console.log('\n📄 SQL File Contents:');
     console.log('   - Add context_story column to playlists');
     console.log('   - Create playlist_shares table with RLS');
+    console.log('   - Create playlist_reactions table');
+    console.log('   - Create friend_activities table');
     console.log('   - Add indexes for performance');
     console.log('   - Create triggers for activity tracking');
     
@@ -119,11 +173,42 @@ async function verifyMigration() {
       }
     }
     console.log('✅ playlist_shares table accessible');
+
+    // Check playlist_reactions table
+    console.log('3️⃣  Testing playlist_reactions table...');
+    const { error: reactionsError } = await supabaseAdmin
+      .from('playlist_reactions')
+      .select('*')
+      .limit(1);
+    
+    if (reactionsError) {
+      if (reactionsError.message.includes('does not exist')) {
+        console.log('❌ playlist_reactions table not found');
+        return false;
+      }
+    }
+    console.log('✅ playlist_reactions table accessible');
+
+    // Check friend_activities table
+    console.log('4️⃣  Testing friend_activities table...');
+    const { error: activitiesError } = await supabaseAdmin
+      .from('friend_activities')
+      .select('*')
+      .limit(1);
+    
+    if (activitiesError) {
+      if (activitiesError.message.includes('does not exist')) {
+        console.log('❌ friend_activities table not found');
+        return false;
+      }
+    }
+    console.log('✅ friend_activities table accessible');
     
     console.log('\n🎉 Migration verification successful!');
     console.log('\n✅ Ready for context-required sharing features:');
     console.log('   - Playlists now require context stories');
     console.log('   - Share tracking with friend activities');
+    console.log('   - Reaction system tables are available');
     console.log('   - Proper security policies in place');
     
     return true;

@@ -216,43 +216,11 @@ export function usePlaylistMutations() {
     },
   })
 
-  // TODO: Create API endpoints for these operations
-  // const recordPlay = useMutation({
-  //   mutationFn: async ({ playlistId, userId }: { playlistId: string; userId?: string }) => {
-  //     // Will need API endpoint for recording plays
-  //   },
-  //   onSuccess: (_, { playlistId }) => {
-  //     queryClient.invalidateQueries({ queryKey: playlistKeys.detail(playlistId) })
-  //   },
-  // })
-
-  // const sharePlaylist = useMutation({
-  //   mutationFn: async ({ 
-  //     playlistId, 
-  //     sharedWith, 
-  //     shareContext, 
-  //     shareType = 'friend' 
-  //   }: { 
-  //     playlistId: string
-  //     sharedWith: string
-  //     shareContext: string
-  //     shareType?: 'friend' | 'public' | 'group'
-  //   }) => {
-  //     // Will need API endpoint for sharing playlists
-  //   },
-  //   onSuccess: () => {
-  //     queryClient.invalidateQueries({ queryKey: playlistKeys.all })
-  //     queryClient.invalidateQueries({ queryKey: ['friend-activities'] })
-  //   },
-  // })
-
   return {
     likePlaylist,
     toggleLike: likePlaylist, // Alias for compatibility
     createPlaylist,
     updatePlaylist,
     deletePlaylist,
-    // recordPlay, // TODO: Implement API endpoint
-    // sharePlaylist, // TODO: Implement API endpoint
   }
-} 
+}

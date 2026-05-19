@@ -18,6 +18,7 @@
   - React Query for server state management and caching
   - Context API for authentication state
   - Modular component structure with shadcn/ui
+  - **Operations, migrations, and security:** see [OPERATIONS_AND_SECURITY.md](./OPERATIONS_AND_SECURITY.md)
 
 ### Directory Structure
 ```
@@ -85,7 +86,7 @@ playlist-nextjs/
 
 ### Infrastructure
 - **Deployment Platform**: Vercel (configured for one-click deployment)
-- **CI/CD**: Vercel's built-in deployment pipeline
+- **CI/CD**: GitHub Actions (`.github/workflows/ci.yml`) — typecheck, lint, Vitest, production build; Vercel deploys on merge
 - **Monitoring/Logging**: Built-in console logging, Supabase monitoring
 - **External Services**: Spotify API, Apple Music API, Supabase backend
 

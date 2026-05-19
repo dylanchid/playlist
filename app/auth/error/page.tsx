@@ -1,9 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AuthErrorFromHash } from "@/components/auth/auth-error-from-hash";
 
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ error: string }>;
+  searchParams: Promise<{ error?: string; error_code?: string; error_description?: string }>;
 }) {
   const params = await searchParams;
 
@@ -17,16 +18,24 @@ export default async function Page({
                 Sorry, something went wrong.
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-2">
               {params?.error ? (
                 <p className="text-sm text-muted-foreground">
-                  Code error: {params.error}
+                  <span className="font-medium text-foreground">Query error:</span>{" "}
+                  {params.error}
                 </p>
-              ) : (
+              ) : null}
+              {params?.error_description ? (
                 <p className="text-sm text-muted-foreground">
-                  An unspecified error occurred.
+                  {decodeURIComponent(String(params.error_description).replace(/\+/g, " "))}
                 </p>
-              )}
+              ) : null}
+              <AuthErrorFromHash />
+              {!params?.error ? (
+                <p className="text-sm text-muted-foreground">
+                  If you used social login, details may appear above (from the URL hash).
+                </p>
+              ) : null}
             </CardContent>
           </Card>
         </div>

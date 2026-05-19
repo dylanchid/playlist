@@ -1,10 +1,28 @@
+<h1 align="center">PlaylistShare</h1>
+
+<p align="center">
+ Social music discovery through friend-curated playlists with personal context (Next.js 15, Supabase, Spotify).
+</p>
+
+## Documentation map
+
+| Document | Purpose |
+|----------|---------|
+| [docs/PRD.md](docs/PRD.md) | Product requirements |
+| [docs/OPERATIONS_AND_SECURITY.md](docs/OPERATIONS_AND_SECURITY.md) | Auth, migrations, CI, RLS verification |
+| [NEXT_STEPS.md](NEXT_STEPS.md) | Apply DB schema and verify sharing / reactions / feed |
+| [supabase/README.md](supabase/README.md) | `supabase link`, `npm run db:push` |
+| [docs/codebase.md](docs/codebase.md) | Architecture overview |
+
+---
+
 <a href="https://demo-nextjs-with-supabase.vercel.app/">
-  <img alt="Next.js and Supabase Starter Kit - the fastest way to build apps with Next.js and Supabase" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">
-  <h1 align="center">Next.js and Supabase Starter Kit</h1>
+  <img alt="Next.js and Supabase Starter Kit" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">
+  <h2 align="center">Starter kit appendix</h2>
 </a>
 
 <p align="center">
- The fastest way to build apps with Next.js and Supabase
+ Based on the Next.js + Supabase starter template
 </p>
 
 <p align="center">
@@ -49,6 +67,14 @@ The above will also clone the Starter kit to your GitHub, you can clone that loc
 
 If you wish to just develop locally and not deploy to Vercel, [follow the steps below](#clone-and-run-locally).
 
+## Project documentation (this repo)
+
+Beyond the starter instructions below, this codebase includes:
+
+- **[docs/OPERATIONS_AND_SECURITY.md](docs/OPERATIONS_AND_SECURITY.md)** — Auth middleware, public routes, database migrations (CLI + legacy), Spotify credential storage, CI, CSP, test map, and **how to map the Supabase Connect / shadcn wizard to this repo**.
+- **[supabase/README.md](supabase/README.md)** — Supabase CLI: `link`, `db push`, migration order.
+- **[NEXT_STEPS.md](NEXT_STEPS.md)** — Activating PRD social/sharing features and verification steps.
+
 ## Clone and run locally
 
 1. You'll first need a Supabase project which can be made [via the Supabase dashboard](https://database.new)
@@ -73,14 +99,7 @@ If you wish to just develop locally and not deploy to Vercel, [follow the steps 
    cd with-supabase-app
    ```
 
-4. Rename `.env.example` to `.env.local` and update the following:
-
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=[INSERT SUPABASE PROJECT URL]
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=[INSERT SUPABASE PROJECT API ANON KEY]
-   ```
-
-   Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` can be found in [your Supabase project's API settings](https://supabase.com/dashboard/project/_?showConnect=true)
+4. Copy **[`.env.example`](.env.example)** to **`.env.local`** and set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (see Supabase **Project Settings → API**). Add optional vars from the example for Spotify and encryption if needed.
 
 5. You can now run the Next.js local development server:
 

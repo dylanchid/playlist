@@ -5,6 +5,8 @@ import { User, Session } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import { UserProfile } from '@/types/database'
 import { getOrCreateUserProfile } from '@/lib/supabase/profiles'
+import { USER_PROFILE_SAFE_COLUMNS } from '@/lib/supabase/user-profile-select'
+import { devLog } from '@/lib/auth/dev-log'
 
 // Define a comprehensive error type for better type safety
 type AuthError = 
@@ -38,14 +40,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authError, setAuthError] = useState<string | null>(null)
   const [initialized, setInitialized] = useState(false)
   const supabase = useMemo(() => createClient(), [])
-
-  console.log('🏗️ [AUTH_PROVIDER] Component initialized', { 
-    timestamp: new Date().toISOString(),
-    initialized,
-    loading,
-    hasUser: !!user,
-    hasProfile: !!profile 
-  });
 
   const clearAuthError = useCallback(() => setAuthError(null), [])
 
@@ -89,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           errorObj.message?.includes('NetworkError') ||
           errorObj.message?.includes('ERR_NETWORK') ||
           errorObj.message?.includes('ERR_INTERNET_DISCONNECTED')) {
-        console.log(`🔄 Network error in ${context}, not logging as error`);
+        devLog(`Network error in ${context}, not logging as error`);
         return;
       }
     }
@@ -125,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Clear potentially corrupted auth state
       if (typeof window !== 'undefined') {
-        console.log('🔄 Clearing auth state due to CORS error')
+        devLog('🔄 Clearing auth state due to CORS error')
         const projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1]?.split('.')[0];
         localStorage.removeItem(`sb-${projectRef}-auth-token`)
         // Force sign out to clear any corrupted state
@@ -134,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else if (errorMessage?.includes('Auth session missing') || 
                errorMessage?.includes('refresh_token')) {
       // Handle auth token issues
-      console.log('🔄 Auth session issue detected, clearing state')
+      devLog('🔄 Auth session issue detected, clearing state')
       if (typeof window !== 'undefined') {
         const projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1]?.split('.')[0];
         localStorage.removeItem(`sb-${projectRef}-auth-token`)
@@ -147,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = useCallback(async (userId: string, userEmail?: string, userMetadata?: Record<string, unknown>) => {
     if (!userId) {
-      console.log('No user ID provided for profile fetch');
+      devLog('No user ID provided for profile fetch');
       return;
     }
 
@@ -155,14 +149,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearAuthError()
     
     try {
-      console.log('🔍 [PROFILE] Fetching or creating profile for user:', userId, { userEmail, hasMetadata: !!userMetadata });
+      devLog('🔍 [PROFILE] Fetching or creating profile for user:', userId, { userEmail, hasMetadata: !!userMetadata });
       
       // If we have email, try to get or create profile
       if (userEmail) {
-        console.log('📧 [PROFILE] User has email, attempting to get or create profile...');
+        devLog('📧 [PROFILE] User has email, attempting to get or create profile...');
         const profile = await getOrCreateUserProfile(supabase, userId, userEmail, userMetadata);
         if (profile) {
-          console.log('✅ [PROFILE] Profile fetched/created successfully:', { 
+          devLog('✅ [PROFILE] Profile fetched/created successfully:', { 
             username: profile.username, 
             displayName: profile.display_name,
             profileCompleted: profile.profile_completed 
@@ -170,20 +164,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(profile);
           return;
         }
-        console.log('⚠️ [PROFILE] getOrCreateUserProfile returned null, falling back to direct fetch');
+        devLog('⚠️ [PROFILE] getOrCreateUserProfile returned null, falling back to direct fetch');
       }
 
       // Fallback to original fetch logic
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('*')
+        .select(USER_PROFILE_SAFE_COLUMNS)
         .eq('id', userId)
         .single()
 
       if (error) {
         if (error.code === 'PGRST116') {
           // No profile found
-          console.log('ℹ️ [PROFILE] No profile found for user:', userId);
+          devLog('ℹ️ [PROFILE] No profile found for user:', userId);
           setProfile(null);
         } else {
           console.error('❌ [PROFILE] Database error during profile fetch:', error);
@@ -197,7 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
       } else {
-        console.log('✅ [PROFILE] Profile fetched successfully:', { 
+        devLog('✅ [PROFILE] Profile fetched successfully:', { 
           username: data.username, 
           displayName: data.display_name,
           id: data.id 
@@ -219,16 +213,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshProfile = useCallback(async () => {
     if (user?.id) {
-      console.log('🔄 [PROFILE] Refreshing profile for user:', user.id);
+      devLog('🔄 [PROFILE] Refreshing profile for user:', user.id);
       await fetchProfile(user.id, user.email || undefined, user.user_metadata)
     } else {
-      console.log('👻 [PROFILE] No user to refresh profile for');
+      devLog('👻 [PROFILE] No user to refresh profile for');
     }
   }, [user?.id, user?.email, user?.user_metadata, fetchProfile])
 
   // Track state changes for debugging
   useEffect(() => {
-    console.log('📊 [AUTH_PROVIDER] State changed:', {
+    devLog('📊 [AUTH_PROVIDER] State changed:', {
       timestamp: new Date().toISOString(),
       hasUser: !!user,
       userId: user?.id,
@@ -250,13 +244,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Get initial session
     const getSession = async () => {
       try {
-        console.log('🔐 Getting initial session...');
+        devLog('🔐 Getting initial session...');
         const { data: { session }, error } = await supabase.auth.getSession()
         if (error) {
           handleAuthError(error as AuthError, 'initial session')
         } else {
-                  console.log('🔐 Initial session:', session?.user?.email || 'No session');
-        console.log('🔐 Session details:', { 
+                  devLog('🔐 Initial session:', session?.user?.email || 'No session');
+        devLog('🔐 Session details:', { 
           hasSession: !!session, 
           hasUser: !!session?.user, 
           userId: session?.user?.id,
@@ -282,8 +276,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('🔐 Auth state change:', event, session?.user?.email || 'No session')
-        console.log('🔐 Auth event details:', { 
+        devLog('🔐 Auth state change:', event, session?.user?.email || 'No session')
+        devLog('🔐 Auth event details:', { 
           event, 
           hasSession: !!session, 
           hasUser: !!session?.user,
@@ -291,7 +285,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         
         try {
-          console.log('🔄 [AUTH_PROVIDER] Setting session and user state...', {
+          devLog('🔄 [AUTH_PROVIDER] Setting session and user state...', {
             sessionExists: !!session,
             userExists: !!session?.user,
             userId: session?.user?.id
@@ -301,27 +295,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(session?.user ?? null)
           
           if (session?.user?.id) {
-            console.log('👤 [AUTH_PROVIDER] User found, fetching profile...', session.user.id);
+            devLog('👤 [AUTH_PROVIDER] User found, fetching profile...', session.user.id);
             await fetchProfile(session.user.id, session.user.email || undefined, session.user.user_metadata)
           } else {
-            console.log('🔐 [AUTH_PROVIDER] No user in session, clearing profile');
+            devLog('🔐 [AUTH_PROVIDER] No user in session, clearing profile');
             setProfile(null)
             clearAuthError() // Clear errors on sign out
           }
           
-          console.log('✅ [AUTH_PROVIDER] Auth state change processing completed');
+          devLog('✅ [AUTH_PROVIDER] Auth state change processing completed');
         } catch (error) {
           console.error('❌ [AUTH_PROVIDER] Error during auth state change:', error);
           handleAuthError(error as AuthError, 'auth state change')
         } finally {
           setLoading(false)
-          console.log('🏁 [AUTH_PROVIDER] Loading set to false');
+          devLog('🏁 [AUTH_PROVIDER] Loading set to false');
         }
       }
     )
 
     return () => {
-      console.log('🧹 Cleaning up auth subscription');
+      devLog('🧹 Cleaning up auth subscription');
       subscription.unsubscribe();
     }
   }, [initialized, supabase.auth, fetchProfile, handleAuthError, clearAuthError])
@@ -329,7 +323,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       clearAuthError()
-      console.log('🚪 Starting sign out process...');
+      devLog('🚪 Starting sign out process...');
       
       // First clear our local state immediately
       setUser(null)
@@ -345,7 +339,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Clear ALL browser storage related to auth
       if (typeof window !== 'undefined') {
-        console.log('🧹 Clearing all auth-related storage...')
+        devLog('🧹 Clearing all auth-related storage...')
         
         // Clear localStorage items
         Object.keys(localStorage).forEach(key => {
@@ -354,7 +348,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               key.includes('auth') ||
               key.includes('session') ||
               key.includes('token')) {
-            console.log(`Removing localStorage key: ${key}`)
+            devLog(`Removing localStorage key: ${key}`)
             localStorage.removeItem(key)
           }
         })
@@ -366,7 +360,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               key.includes('auth') ||
               key.includes('session') ||
               key.includes('token')) {
-            console.log(`Removing sessionStorage key: ${key}`)
+            devLog(`Removing sessionStorage key: ${key}`)
             sessionStorage.removeItem(key)
           }
         })
@@ -376,7 +370,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         window.dispatchEvent(new Event('supabase-auth-clear'))
       }
       
-      console.log('✅ Sign out process completed');
+      devLog('✅ Sign out process completed');
       
       // Additional verification - check if we still have any session
       setTimeout(async () => {

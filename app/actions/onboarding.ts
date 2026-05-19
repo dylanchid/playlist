@@ -32,7 +32,7 @@ export async function skipGenreSelectionAction() {
         onboarding_completed: true,
         updated_at: new Date().toISOString(),
       })
-      .eq('user_id', userId);
+      .eq('id', userId);
 
     if (error) {
       throw new Error(error.message);
@@ -62,7 +62,7 @@ export async function updateUserGenresAction(genres: string[]) {
         onboarding_completed: true, // Mark onboarding as completed here too
         updated_at: new Date().toISOString(),
       })
-      .eq('user_id', userId)
+      .eq('id', userId)
       .select('display_name')
       .single();
 

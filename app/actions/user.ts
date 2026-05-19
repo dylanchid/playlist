@@ -42,7 +42,7 @@ export async function updateTasteProfileAction(profile: TasteProfile) {
         onboarding_completed: true,
         updated_at: new Date().toISOString(),
       })
-      .eq('user_id', userId)
+      .eq('id', userId)
       .select('display_name')
       .single();
 
@@ -54,7 +54,7 @@ export async function updateTasteProfileAction(profile: TasteProfile) {
     if (data?.display_name) {
       revalidatePath(`/profile/${data.display_name}`);
     }
-    revalidatePath('/melo-home');
+    revalidatePath('/');
     revalidatePath('/onboarding/taste-profile');
 
   } catch (error) {
@@ -67,11 +67,10 @@ export async function updateTasteProfileAction(profile: TasteProfile) {
   }
 
   // Redirect to the main feed upon successful completion
-  redirect('/melo-home');
+  redirect('/');
 }
 
 export async function followUserAction(userIdToFollow: string) {
-  'use server';
   try {
     const currentUserId = await getUserId();
     const supabase = await createClient();
@@ -97,6 +96,7 @@ export async function followUserAction(userIdToFollow: string) {
     }
     
     revalidatePath('/onboarding/find-friends');
+    revalidatePath('/friends');
     return { success: true };
 
   } catch (error) {
@@ -106,4 +106,122 @@ export async function followUserAction(userIdToFollow: string) {
     }
     return { success: false, error: 'An unknown error occurred' };
   }
-} 
+}
+
+export async function getFriends() {
+  try {
+    const userId = await getUserId();
+    const supabase = await createClient();
+    
+    const { data, error } = await supabase
+      .from('music_friends')
+      .select(`
+        friend_id,
+        user_profiles!music_friends_friend_id_fkey (
+          id,
+          username,
+          avatar_url,
+          bio
+        )
+      `)
+      .eq('user_id', userId)
+      .eq('status', 'connected');
+      
+    if (error) throw error;
+
+    type FriendProfile = {
+      id: string;
+      username: string;
+      avatar_url: string | null;
+      bio: string | null;
+    };
+
+    type FriendRow = {
+      user_profiles: FriendProfile | FriendProfile[] | null;
+    };
+
+    function friendProfile(
+      nested: FriendRow["user_profiles"],
+    ): FriendProfile | null {
+      if (nested == null) return null;
+      return Array.isArray(nested) ? nested[0] ?? null : nested;
+    }
+
+    return (data ?? [])
+      .map((row: FriendRow) => friendProfile(row.user_profiles))
+      .filter((p): p is FriendProfile => p != null);
+  } catch (error) {
+    console.error("Error in getFriends:", error);
+    return [];
+  }
+}
+
+export async function getSuggestions() {
+  try {
+    const userId = await getUserId();
+    const supabase = await createClient();
+    
+    // Simple suggestion: users not already followed by the current user
+    const { data: friendsData } = await supabase
+      .from('music_friends')
+      .select('friend_id')
+      .eq('user_id', userId);
+      
+    const friendIds =
+      friendsData?.map((f: { friend_id: string }) => f.friend_id) || [];
+    friendIds.push(userId); // Exclude self
+    
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('id, username, avatar_url, bio')
+      .not('id', 'in', `(${friendIds.join(',')})`)
+      .limit(5);
+      
+    if (error) throw error;
+    
+    return data || [];
+  } catch (error) {
+    console.error("Error in getSuggestions:", error);
+    return [];
+  }
+}
+
+export async function getFriendPlaylists() {
+  try {
+    const userId = await getUserId();
+    const supabase = await createClient();
+    
+    const { data: friendsData } = await supabase
+      .from('music_friends')
+      .select('friend_id')
+      .eq('user_id', userId)
+      .eq('status', 'connected');
+      
+    const friendIds =
+      friendsData?.map((f: { friend_id: string }) => f.friend_id) || [];
+    
+    if (friendIds.length === 0) return [];
+    
+    const { data, error } = await supabase
+      .from('playlists')
+      .select(`
+        *,
+        user_profiles:user_id (
+          id,
+          username,
+          avatar_url
+        )
+      `)
+      .in('user_id', friendIds)
+      .eq('is_public', true)
+      .order('created_at', { ascending: false })
+      .limit(10);
+      
+    if (error) throw error;
+    
+    return data || [];
+  } catch (error) {
+    console.error("Error in getFriendPlaylists:", error);
+    return [];
+  }
+}

@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSupabase } from './use-supabase'
 import { UpdateUserProfileData, UserProfile } from '@/types/database'
 import { useAuth } from '@/contexts/auth-context'
+import { USER_PROFILE_SAFE_COLUMNS } from '@/lib/supabase/user-profile-select'
 
 export function useProfile(username?: string) {
   const supabase = useSupabase()
@@ -15,7 +16,7 @@ export function useProfile(username?: string) {
       
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('*')
+        .select(USER_PROFILE_SAFE_COLUMNS)
         .eq('username', username)
         .single()
       
@@ -39,7 +40,7 @@ export function useUpdateProfile() {
         .from('user_profiles')
         .update(data)
         .eq('id', user.id)
-        .select()
+        .select(USER_PROFILE_SAFE_COLUMNS)
         .single()
       
       if (error) throw error

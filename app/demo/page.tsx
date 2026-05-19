@@ -1,9 +1,5 @@
-import { ContextDemo } from '@/components/playlists/context-demo'
+import { redirect } from "next/navigation";
 
 export default function DemoPage() {
-  return (
-    <div className="min-h-screen bg-background">
-      <ContextDemo />
-    </div>
-  )
-} 
+  redirect("/");
+}

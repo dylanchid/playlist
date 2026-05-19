@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Head from "next/head";
 import { createClient } from "@/lib/supabase/client";
@@ -13,6 +14,7 @@ interface PlaylistPageProps {
 
 export default function PlaylistPage({ params }: PlaylistPageProps) {
   const router = useRouter();
+// ... (rest is unmodified inside function body initially)
   const [playlist, setPlaylist] = useState<PlaylistWithUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -130,10 +132,12 @@ export default function PlaylistPage({ params }: PlaylistPageProps) {
             {/* Cover Image Section */}
             <div className="relative h-64 bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400">
               {playlist.cover_image_url && (
-                <img
+                <Image
                   src={playlist.cover_image_url}
                   alt={playlist.name}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="100vw"
+                  className="object-cover"
                 />
               )}
               <div className="absolute inset-0 bg-black/30 flex items-end">

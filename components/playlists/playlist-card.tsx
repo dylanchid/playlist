@@ -3,46 +3,43 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Heart, Play, Share2, Music, Clock, Eye, ExternalLink } from 'lucide-react'
+import { Play, Share2, Music, Clock, Eye, ExternalLink } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { formatDuration } from '@/types/playlist'
-import { PlaylistWithUser } from '@/types/database'
+import { PlaylistWithUser, ReactionType } from '@/types/database'
 import { User } from '@/types/playlist'
 import { CompactContextDisplay } from './playlist-context-display'
 import { ShareModal } from './share-modal'
+import { ReactionPicker } from '@/components/social/reaction-picker'
+import { sharePlaylist } from '@/app/actions/social'
+import { toast } from 'sonner'
 
 interface PlaylistCardProps {
-  playlist: PlaylistWithUser
+  playlist: PlaylistWithUser & {
+    reactions?: Record<ReactionType, number>
+    user_reaction?: ReactionType | null
+  }
   user: User
-  onLike: (playlistId: string) => void
   onShare: (playlist: PlaylistWithUser) => void
-  isLiked: boolean
+  onLike?: () => void
+  isLiked?: boolean
 }
 
 export const PlaylistCard: React.FC<PlaylistCardProps> = ({ 
   playlist, 
   user,
-  onLike, 
   onShare, 
-  isLiked 
+  onLike: _onLike,
+  isLiked: _isLiked,
 }) => {
   const router = useRouter()
-  const [localLikes, setLocalLikes] = useState(playlist.likes_count || 0)
-  const [liked, setLiked] = useState(isLiked)
   const [showShareModal, setShowShareModal] = useState(false)
 
   const handleCardClick = () => {
     router.push(`/playlists/${playlist.id}`)
-  }
-
-  const handleLike = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setLiked(!liked)
-    setLocalLikes(prev => liked ? prev - 1 : prev + 1)
-    onLike(playlist.id)
   }
 
   const handleShare = (e: React.MouseEvent) => {
@@ -50,10 +47,16 @@ export const PlaylistCard: React.FC<PlaylistCardProps> = ({
     setShowShareModal(true)
   }
 
-  const handleShareWithContext = async () => {
-    // For now, just call the existing onShare function
-    // In the future, this would handle context-aware sharing
-    onShare(playlist)
+  const handleShareWithContext = async (context: string, targetFriends?: string[], shareType?: 'friend' | 'public') => {
+    try {
+      await sharePlaylist(playlist.id, targetFriends || [], context, shareType)
+      toast.success('Playlist shared successfully!')
+      onShare(playlist)
+    } catch (error) {
+      console.error('Error sharing playlist:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to share playlist')
+      throw error
+    }
   }
 
   const handleExternalLink = (e: React.MouseEvent) => {
@@ -140,18 +143,13 @@ export const PlaylistCard: React.FC<PlaylistCardProps> = ({
           <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 line-clamp-1">
             {playlist.name}
           </h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleLike}
-            className={`transition-colors ${
-              liked 
-                ? 'text-red-500 hover:text-red-600' 
-                : 'text-gray-400 hover:text-red-500'
-            }`}
-          >
-            <Heart className={`w-5 h-5 ${liked ? 'fill-current' : ''}`} />
-          </Button>
+          <div onClick={(e) => e.stopPropagation()}>
+            <ReactionPicker 
+              playlistId={playlist.id}
+              initialReactions={playlist.reactions}
+              userReaction={playlist.user_reaction}
+            />
+          </div>
         </div>
         
         {playlist.description && (
@@ -215,9 +213,6 @@ export const PlaylistCard: React.FC<PlaylistCardProps> = ({
           </div>
           
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              {localLikes} likes
-            </span>
             <Button
               variant="ghost"
               size="sm"

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import Image from 'next/image'
 import { ChevronLeft, ChevronRight, Play, Heart, Share2, Music2, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -97,16 +98,57 @@ export const PlaylistSection: React.FC<PlaylistSectionProps> = ({
     return playlists
   }
 
+  const PlaylistCover = ({
+    coverUrl,
+    alt,
+    className,
+    sizes,
+    compact,
+  }: {
+    coverUrl: string | null
+    alt: string
+    className?: string
+    sizes: string
+    compact?: boolean
+  }) => {
+    if (coverUrl) {
+      return (
+        <Image
+          src={coverUrl}
+          alt={alt}
+          fill
+          sizes={sizes}
+          className={className}
+        />
+      )
+    }
+    return (
+      <div
+        className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted to-muted-foreground/25 ${className ?? ''}`}
+        aria-hidden
+      >
+        <Music2
+          className={
+            compact
+              ? 'h-8 w-8 text-muted-foreground/50'
+              : 'h-16 w-16 text-muted-foreground/50'
+          }
+        />
+      </div>
+    )
+  }
+
   const PlaylistCard = ({ playlist }: { playlist: PlaylistData }) => (
     <Card 
       className="group cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
       onClick={() => onPlaylistClick?.(playlist)}
     >
-      <div className="relative overflow-hidden">
-        <img 
-          src={playlist.coverUrl || '/placeholder-playlist.jpg'} 
+      <div className="relative overflow-hidden w-full h-48">
+        <PlaylistCover
+          coverUrl={playlist.coverUrl}
           alt={playlist.name}
-          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          className="object-cover group-hover:scale-105 transition-transform duration-300"
         />
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
           <Button 
@@ -190,11 +232,15 @@ export const PlaylistSection: React.FC<PlaylistSectionProps> = ({
       className="flex items-center gap-4 p-4 hover:bg-muted/50 rounded-lg cursor-pointer transition-colors"
       onClick={() => onPlaylistClick?.(playlist)}
     >
-      <img 
-        src={playlist.coverUrl || '/placeholder-playlist.jpg'} 
-        alt={playlist.name}
-        className="w-16 h-16 rounded-lg object-cover"
-      />
+      <div className="relative w-16 h-16 flex-shrink-0 overflow-hidden rounded-lg">
+        <PlaylistCover
+          coverUrl={playlist.coverUrl}
+          alt={playlist.name}
+          sizes="64px"
+          compact
+          className="rounded-lg object-cover"
+        />
+      </div>
       <div className="flex-1 min-w-0">
         <h3 className="font-medium truncate">{playlist.name}</h3>
         <p className="text-sm text-muted-foreground truncate">{playlist.description}</p>

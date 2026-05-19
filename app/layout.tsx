@@ -43,7 +43,9 @@ export default function RootLayout({
               <main>
                 {children}
               </main>
-              <DebugAuthState />
+              {process.env.NEXT_PUBLIC_DEBUG_AUTH === "true" ? (
+                <DebugAuthState />
+              ) : null}
             </div>
             <Toaster />
           </ThemeProvider>

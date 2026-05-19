@@ -63,7 +63,7 @@ export const SoundCloudProfileHeader: React.FC<SoundCloudProfileHeaderProps> = (
         <div className="flex flex-col md:flex-row md:items-end gap-4 md:gap-6">
           {/* Avatar */}
           <Avatar className="w-32 h-32 md:w-40 md:h-40 border-4 border-white shadow-xl bg-white">
-            <AvatarImage src={user.avatar_url} alt={user.username} />
+            <AvatarImage src={user.avatar_url || undefined} alt={user.username} />
             <AvatarFallback className="bg-orange-500 text-white text-4xl md:text-5xl font-bold">
               {user.username.charAt(0).toUpperCase()}
             </AvatarFallback>

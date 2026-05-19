@@ -123,6 +123,12 @@ export interface SpotifyTokenRefreshResponse {
   expires_in: number;
 }
 
+export interface SpotifyTokens {
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt?: Date;
+}
+
 export interface SpotifyAuthState {
   state: string;
   code_verifier: string;

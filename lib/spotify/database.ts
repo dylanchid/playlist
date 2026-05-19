@@ -147,6 +147,11 @@ export async function getSpotifyConnectionStatus(userId: string): Promise<{
   connected: boolean;
   spotifyId?: string;
   expiresAt?: Date;
+  rateLimit?: {
+    limit: number;
+    remaining: number;
+    resetTime: Date;
+  };
 }> {
   const supabase = await createServerClient();
   
